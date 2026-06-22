@@ -1,5 +1,52 @@
 /* Post detail + comments. */
 
+/* Markdown Write/Preview toggle (create-post) */
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: 6px;
+}
+.md-tabs {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 2px;
+}
+.md-tab {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: calc(var(--r-sm) - 2px);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.md-tab:hover {
+  color: var(--text);
+}
+.md-tab.is-active {
+  background: var(--accent-soft, rgba(45, 212, 191, 0.12));
+  color: var(--accent);
+}
+.md-preview {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+}
+.md-preview > :first-child {
+  margin-top: 0;
+}
+.md-preview > :last-child {
+  margin-bottom: 0;
+}
+
 .post-detail {
   display: flex;
   gap: var(--s-4);

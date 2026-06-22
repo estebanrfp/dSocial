@@ -36,7 +36,8 @@ export function renderMarkdown(src) {
     }
     const h = line.match(/^(#{1,3})\s+(.*)$/);
     if (h) { closeList(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue; }
-    if (/^>\s?/.test(line)) { closeList(); out.push(`<blockquote>${inline(line.replace(/^>\s?/, ""))}</blockquote>`); i++; continue; }
+    // `>` was HTML-escaped to `&gt;` above, so match that, not a literal `>`.
+    if (/^&gt;\s?/.test(line)) { closeList(); out.push(`<blockquote>${inline(line.replace(/^&gt;\s?/, ""))}</blockquote>`); i++; continue; }
     if (/^[-*]\s+/.test(line)) {
       if (!listOpen) { out.push("<ul>"); listOpen = true; }
       out.push(`<li>${inline(line.replace(/^[-*]\s+/, ""))}</li>`);

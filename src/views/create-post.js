@@ -4,6 +4,7 @@ import { html, esc } from "../ui/base.js";
 import { navigate } from "../router/router.js";
 import { createPost } from "../services/posts.js";
 import { uploadImage } from "../services/images.js";
+import { renderMarkdown } from "../utils/markdown.js";
 
 /** @returns {Promise<HTMLElement>} */
 export default async function createPostView({ communityId }) {
@@ -17,10 +18,17 @@ export default async function createPostView({ communityId }) {
         <span>Title</span>
         <input class="input" name="title" autocomplete="off" />
       </label>
-      <label class="field">
-        <span>Content <em class="opt">Markdown</em></span>
-        <textarea class="input" name="content" rows="8" placeholder="Write something…"></textarea>
-      </label>
+      <div class="field">
+        <div class="field-head">
+          <span>Content <em class="opt">Markdown</em></span>
+          <div class="md-tabs" data-tabs>
+            <button type="button" class="md-tab is-active" data-tab="write">Write</button>
+            <button type="button" class="md-tab" data-tab="preview">Preview</button>
+          </div>
+        </div>
+        <textarea class="input" name="content" rows="8" placeholder="Write something… **bold**, _italic_, [links](https://…), - lists, > quotes"></textarea>
+        <div class="md-preview markdown" data-md-preview hidden></div>
+      </div>
       <label class="field">
         <span>Image <em class="opt">optional</em></span>
         <input class="input file-input" name="image" type="file" accept="image/*" />
@@ -34,6 +42,23 @@ export default async function createPostView({ communityId }) {
   const form = el.querySelector("[data-form]");
   const err = el.querySelector("[data-error]");
   const preview = el.querySelector("[data-preview]");
+
+  // Markdown Write/Preview toggle for the content field.
+  const tabs = el.querySelector("[data-tabs]");
+  const mdPreview = el.querySelector("[data-md-preview]");
+  tabs.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-tab]");
+    if (!tab) return;
+    const isPreview = tab.dataset.tab === "preview";
+    tabs.querySelectorAll(".md-tab").forEach((t) => t.classList.toggle("is-active", t === tab));
+    if (isPreview) {
+      const md = form.content.value.trim();
+      mdPreview.innerHTML = md ? renderMarkdown(md) : `<p class="muted">Nothing to preview yet.</p>`;
+      mdPreview.style.minHeight = `${form.content.offsetHeight}px`;
+    }
+    form.content.hidden = isPreview;
+    mdPreview.hidden = !isPreview;
+  });
   form.image.addEventListener("change", () => {
     const file = form.image.files?.[0];
     if (file) {
