@@ -6,7 +6,7 @@
   "description": "A peer-to-peer polling and forum app built on GenosDB — vanilla JavaScript, no UI framework.",
   "scripts": {
     "dev": "bun scripts/copy-genosdb.js && bun server.js",
-    "build": "bun scripts/copy-genosdb.js && bun build ./index.html --outdir dist --minify --sourcemap=linked && bun scripts/copy-genosdb.js dist",
+    "build": "rm -rf dist && bun scripts/copy-genosdb.js && bun build ./index.html --outdir dist --minify --sourcemap=linked --public-path=/ && bun scripts/copy-genosdb.js dist",
     "serve": "bun server.js"
   },
   "dependencies": {

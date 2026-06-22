@@ -1,0 +1,14 @@
+# Netlify configuration for the InterPoll vanilla showcase.
+# Bun builds the app and copies the GenosDB engine into dist/genosdb (served
+# from the root so the engine resolves its plugins at runtime).
+[build]
+  command = "bun run build"
+  publish = "dist"
+
+# SPA fallback: client-side routes resolve to index.html. Real files (hashed
+# assets and /genosdb/*) are served directly by Netlify before this rule applies,
+# so the P2P engine and bundles load normally.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
