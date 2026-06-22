@@ -128,7 +128,7 @@ bun run serve    # Serve a build locally
 
 ## Deploy (Netlify)
 
-[`netlify.toml`](netlify.toml) is preconfigured: `bun run build` → publish `dist`, with an SPA redirect (`/* → /index.html`). Link the repo on Netlify for auto-deploy on push.
+[`netlify.toml`](netlify.toml) drives the build: `bun run build` → publish `dist`, with an SPA redirect (`/* → /index.html`). The repo is linked to Netlify, so **every push to `main` auto-deploys** to production.
 
 > **Superadmins** live in [`src/db/gdb.js`](src/db/gdb.js). For this public showcase a throwaway **demo superadmin** (public seed) is included alongside the operator address so the governance engine can run for any visitor — drop it for a fully private network.
 
