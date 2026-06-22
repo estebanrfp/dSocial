@@ -1,0 +1,34 @@
+/* Design tokens — minimalist dark, indigo accent. Single source of truth for
+   color, spacing, radius and typography. */
+:root {
+  color-scheme: dark;
+
+  /* Elevation ramp */
+  --bg: #0a0b12;
+  --bg-elevated: #12141d;
+  --surface: #14161f;
+  --surface-2: #1a1d27;
+  --surface-3: #20232e;
+  --border: #252836;
+  --border-top: #2e3140;
+
+  /* Text */
+  --text: #e6e8ee;
+  --muted: #9aa1ad;
+
+  /* Brand + status */
+  --brand: #5e6ad2;
+  --brand-hover: #6b76de;
+  --brand-fg: #ffffff;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --danger: #f85149;
+
+  /* Geometry + motion */
+  --radius: 14px;
+  --radius-sm: 10px;
+  --space: 16px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+}
