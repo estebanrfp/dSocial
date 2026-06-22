@@ -1,0 +1,178 @@
+/* Governance dashboard. */
+
+.governance-page {
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+.gov-head h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--s-2);
+}
+.gov-head p {
+  max-width: 60ch;
+}
+.gov-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg, 16px);
+  padding: var(--s-5);
+}
+.gov-card h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 var(--s-3);
+}
+.small {
+  font-size: 12px;
+}
+.gov-card code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 0.9em;
+}
+
+/* Role chips */
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.role-chip.big {
+  font-size: 14px;
+  padding: 5px 14px;
+}
+.role-guest {
+  background: rgba(250, 204, 21, 0.14);
+  color: #facc15;
+}
+.role-member {
+  background: rgba(74, 222, 128, 0.14);
+  color: #4ade80;
+}
+.role-trusted {
+  background: var(--accent-soft, rgba(45, 212, 191, 0.14));
+  color: var(--accent);
+}
+.role-superadmin {
+  background: rgba(167, 139, 250, 0.16);
+  color: #a78bfa;
+}
+
+/* Standing */
+.standing-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-2);
+}
+.standing-row .addr {
+  font-size: 15px;
+  font-weight: 600;
+}
+.mono {
+  font-family: var(--mono, ui-monospace, monospace);
+}
+.progress {
+  height: 7px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: var(--s-3) 0 4px;
+}
+.progress .bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.3s;
+}
+
+/* Constitution */
+.rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  counter-reset: rule;
+}
+.rules li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  background: var(--bg-2, var(--surface-2));
+  border-radius: var(--r-md);
+  font-size: 13px;
+}
+.rule-if {
+  flex: 1;
+  color: var(--text-dim);
+}
+.rule-if b {
+  color: var(--accent);
+  font-weight: 700;
+}
+.rule-arrow {
+  color: var(--muted);
+}
+
+/* Roles grid */
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--s-3);
+}
+.role-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--s-3);
+  background: var(--bg-2, var(--surface-2));
+  border-radius: var(--r-md);
+}
+
+/* Roster */
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.roster li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+.roster li:last-child {
+  border-bottom: none;
+}
+.roster .addr {
+  flex: 1;
+  font-size: 13px;
+}
+
+/* Demo */
+.gov-demo {
+  border-color: var(--accent-soft, rgba(45, 212, 191, 0.3));
+}
+
+/* Topbar role chip */
+.id-role {
+  text-decoration: none;
+  margin-right: 6px;
+}

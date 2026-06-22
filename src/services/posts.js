@@ -5,6 +5,7 @@ import { db } from "../db/gdb.js";
 import { TYPE, newId, postVoteId } from "../db/schema.js";
 import { activeAddress } from "./identity.js";
 import { grantCommunityModerators } from "./moderation.js";
+import { recordPost } from "./roles.js";
 
 function tally(votes) {
   let up = 0, down = 0;
@@ -50,6 +51,7 @@ export async function createPost({ communityId, title, content, imageId }) {
   };
   await db.sm.acls.set(record, id);
   await grantCommunityModerators(id, communityId);
+  recordPost(me).catch(() => {}); // count toward the member→trusted governance rule
   return { ...base(record), upvotes: 0, downvotes: 0, score: 0, commentCount: 0 };
 }
 

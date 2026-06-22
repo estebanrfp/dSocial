@@ -85,7 +85,8 @@ export async function addModerator(id, address) {
   if (!result?.value) throw new Error("Community not found");
   const current = Array.isArray(result.value.moderators) ? result.value.moderators : [];
   if (current.some((m) => m.toLowerCase() === address.toLowerCase())) return;
-  await db.sm.acls.set({ moderators: [...current, address] }, id);
+  // acls.set replaces the whole node value — spread to preserve name/description/etc.
+  await db.sm.acls.set({ ...result.value, moderators: [...current, address] }, id);
 }
 
 /** Remove a moderator (owner-only). */
@@ -94,7 +95,7 @@ export async function removeModerator(id, address) {
   if (!result?.value) return;
   const current = Array.isArray(result.value.moderators) ? result.value.moderators : [];
   await db.sm.acls.set(
-    { moderators: current.filter((m) => m.toLowerCase() !== address.toLowerCase()) },
+    { ...result.value, moderators: current.filter((m) => m.toLowerCase() !== address.toLowerCase()) },
     id,
   );
 }

@@ -8,14 +8,26 @@ const { gdb } = await import(`${location.origin}/genosdb/index.js`);
 /** Database id — also the P2P room name. A fresh room for the vanilla edition. */
 export const GDB_NAME = "interpoll-vanilla";
 
-/** Bootstrap superadmin addresses: the governance signers (RBAC notaries). */
-export const SUPER_ADMINS = ["0xE5639DfE345F8ab845bEBE63a1C7322F9c6fF5c7"];
+// Bootstrap superadmins = the governance signers (RBAC notaries). Two are set:
+// the operator's own address (Esteban — the real root of trust), and a throwaway
+// DEMO identity whose mnemonic is published below (and in GenosDB's own
+// examples/governance.html) so the engine can also run for any showcase visitor
+// who activates it. Either key signs valid promotions; drop the demo entry (and
+// DEMO_SUPERADMIN_MNEMONIC) for a fully private network.
+export const SUPER_ADMINS = [
+  "0xE5639DfE345F8ab845bEBE63a1C7322F9c6fF5c7", // operator (Esteban)
+  "0xbfDe0eCEC5332Fd86D2570085571D6051Df098dA", // demo superadmin (public seed below)
+];
+
+/** Public demo-superadmin seed — SHOWCASE ONLY, protects nothing. Drop for real use. */
+export const DEMO_SUPERADMIN_MNEMONIC =
+  "panic now afford carbon donate lecture drift excite collect essay stuff prosper";
 
 // Open, governance-driven RBAC. `guest` participates the moment it exists
 // (write+link+delete, but delete is always scoped by node ACLs below — no global
 // censor). `member`/`trusted` are earned tiers; `superadmin` only signs the role
 // changes the public rules dictate.
-const ROLES = {
+export const ROLES = {
   superadmin: { can: ["assignRole"], inherits: ["trusted"] },
   trusted: { can: ["write", "link", "sync"], inherits: ["member"] },
   member: { can: ["write", "link", "sync"], inherits: ["guest"] },
@@ -25,8 +37,8 @@ const ROLES = {
 // Public advancement rules (the "constitution"), evaluated against user:<address>
 // nodes while a superadmin is online. Last-match-wins → climbing overrides the
 // floor and losing a condition auto-demotes.
-const GOVERNANCE_RULES = [
-  { if: { role: "guest" }, offsetTimestamp: 10000, then: { assignRole: "member" } },
+export const GOVERNANCE_RULES = [
+  { if: { role: "guest" }, offsetTimestamp: 5000, then: { assignRole: "member" } },
   { if: { role: { $in: ["member", "trusted"] } }, then: { assignRole: "member" } },
   { if: { role: { $in: ["member", "trusted"] }, postCount: { $gte: 3 } }, then: { assignRole: "trusted" } },
 ];

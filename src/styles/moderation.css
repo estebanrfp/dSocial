@@ -1,0 +1,70 @@
+/* Moderator panel + delegated-delete controls. */
+
+.mod-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg, 16px);
+  padding: var(--s-4) var(--s-5);
+  margin-bottom: var(--s-5);
+}
+.mod-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 var(--s-3);
+}
+.mod-add {
+  display: flex;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+.mod-add .input {
+  flex: 1;
+  min-width: 0;
+}
+.mod-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mod-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+}
+
+/* Delegated-delete affordance on cards */
+.post-card-wrap {
+  position: relative;
+  display: block;
+}
+.post-del {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.post-card-wrap:hover .post-del,
+.post-del:focus-visible {
+  opacity: 1;
+}
+.icon-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 4px 9px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--muted);
+}
+.icon-btn:hover {
+  color: var(--danger, #f87171);
+  border-color: var(--danger, #f87171);
+}

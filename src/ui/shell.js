@@ -2,6 +2,8 @@
 // router outlet. Mounted once; the badge reacts to the identity signal.
 import { identity, abbr } from "../state/session.js";
 import { logout } from "../services/identity.js";
+import { subscribeRole } from "../services/roles.js";
+import { SUPER_ADMINS } from "../db/gdb.js";
 import { esc } from "./base.js";
 
 const NAV = [
@@ -30,12 +32,26 @@ export function mountShell(root) {
   `;
 
   const right = root.querySelector(".topbar-right");
+  let unsubRole = null;
   const renderBadge = (addr) => {
+    unsubRole?.();
+    unsubRole = null;
     right.innerHTML = addr
-      ? `<a class="id-pill" href="/profile" title="Your profile">${esc(abbr(addr))}</a>
+      ? `<a class="id-role role-chip role-guest" href="/governance" title="Your role — governance" data-rolechip>guest</a>
+         <a class="id-pill" href="/profile" title="Your profile">${esc(abbr(addr))}</a>
          <button class="btn btn-ghost btn-sm" data-logout>Log out</button>`
       : "";
     right.querySelector("[data-logout]")?.addEventListener("click", () => logout());
+    if (!addr) return;
+    const isSuper = SUPER_ADMINS.some((s) => s.toLowerCase() === addr.toLowerCase());
+    const chip = right.querySelector("[data-rolechip]");
+    subscribeRole(addr, (role) => {
+      const shown = isSuper ? "superadmin" : role;
+      if (chip) {
+        chip.textContent = shown;
+        chip.className = `id-role role-chip role-${shown}`;
+      }
+    }).then((u) => (unsubRole = u));
   };
   identity.subscribe(renderBadge);
 

@@ -2,6 +2,7 @@
 // Signals so the shell, onboarding gate and badges react without polling.
 import { db } from "../db/gdb.js";
 import { signal } from "./signal.js";
+import { ensureUserDoc } from "../services/roles.js";
 
 const addr0 = db.sm?.getActiveEthAddress?.() ?? null;
 
@@ -29,6 +30,8 @@ db.sm?.setSecurityStateChangeCallback?.((s) => {
     hasWebAuthnHardware: s.hasWebAuthnHardwareRegistration,
   });
   if (!s.isActive) mnemonic.set(null);
+  // Seed the governance node so the engine has role + postCount to evaluate.
+  if (s.isActive && s.activeAddress) ensureUserDoc(s.activeAddress).catch(() => {});
 });
 
 /** Whether an identity is currently active. */

@@ -25,6 +25,7 @@ defineRoutes(
     { path: "/chat", load: () => import("./views/chat.js") },
     { path: "/chat/:peerId", load: () => import("./views/chat.js") },
     { path: "/rooms", load: () => import("./views/rooms.js") },
+    { path: "/governance", load: () => import("./views/governance.js") },
     { path: "/p/:postId", load: () => import("./views/post.js") },
     { path: "/c/:communityId", load: () => import("./views/community.js") },
   ],
