@@ -1,9 +1,10 @@
 // Single GenosDB instance — the app's entire data, identity and P2P layer.
 //
-// Loaded intact from the statically-served /genosdb folder (the engine resolves
-// its plugins at runtime via import.meta.url, so it must not be bundled). The URL
-// is built at runtime so the bundler leaves it as a dynamic import.
-const { gdb } = await import(`${location.origin}/genosdb/index.js`);
+// Imported the canonical way (`from "genosdb"`): the bundler inlines GenosDB's
+// core into the app bundle. The engine still loads its optional plugins (sm,
+// genosrtc, …) at runtime via `new URL('./*.min.js', import.meta.url)`, so the
+// build emits those .min.js next to the output bundle (see scripts/copy-genosdb.js).
+import { gdb } from "genosdb";
 
 /** Database id — also the P2P room name. A fresh room for the vanilla edition. */
 export const GDB_NAME = "interpoll-vanilla";

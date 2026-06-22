@@ -1,6 +1,5 @@
 node_modules/
 dist/
-public/genosdb/
 .playwright-cli/
 *.log
 .DS_Store

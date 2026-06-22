@@ -36,6 +36,7 @@ InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer 
 - **Your vote, signed by you.** Every action is signed by an identity that lives only on your device. No peer can forge a vote or post in your name.
 - **Owned by you, not just signed by you.** Your content is yours to remove — no peer can delete your post, vote, message or profile; only you, or a moderator a community owner delegates to.
 - **Earned trust.** Roles aren't handed out: you climb `guest → member → trusted` by participating, under public rules every peer can verify.
+- **Reputation you can't fake.** Karma — and the badges it unlocks — are *derived* from the signed votes of others, never a stored number. There's nothing to tamper with: any peer can recompute it from the same signed nodes.
 - **Private chat.** 1:1 messages and group rooms are end-to-end encrypted in your browser; peers only ever relay ciphertext.
 
 ---
@@ -46,7 +47,8 @@ InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer 
 |---|---|
 | **Cryptographically signed actions** | Every vote, post, comment and message is signed by your device identity and verified by peers. Forgery is impossible without your key. |
 | **Communities, posts & threaded comments** | Reddit-style feeds with Markdown posts (sanitised, zero dependencies) and votable threaded comments. |
-| **Derived tallies & karma** | Scores, poll tallies and user karma are *derived* by aggregating signed vote nodes — no shared counter to race on, no number a peer can fake. |
+| **Derived tallies & karma** | Scores, poll tallies and user karma are *derived* by aggregating signed vote nodes — no shared counter to race on, no number a peer can fake. A vote only counts when its verified signer matches the declared voter. |
+| **Reputation badges** | Karma unlocks six animated tiers — Spark → Bronze → Silver → Gold → Crystal → Legend — hand-drawn as inline SVG (no GIFs, no API, no library). Derived from the same signed votes, so they're unforgeable *and* recomputable by any peer; a toast celebrates each tier-up. |
 | **Polls, public or invite-only** | Single/multi-choice polls; one deterministic vote per identity; single-use invite codes for private polls. |
 | **End-to-end encrypted chat** | 1:1 DMs (RSA-OAEP) and group rooms (AES-256-GCM, key shared by invite link or password). The synced node *is* the delivery. |
 | **Earned trust (governance)** | Climb `guest → member → trusted` under public `governanceRules`; a superadmin only *signs* the promotions the rules dictate. |
@@ -102,6 +104,7 @@ InterPoll is designed to be **harder to censor and tamper with than a single-ser
 
 - Data survives as long as **at least one honest peer** keeps a copy and later reconnects.
 - A signature **cannot be forged** without your device key; peers reject any unsigned or invalidly-signed operation.
+- Every tally (scores, poll results, karma) counts a vote **only when the verified signer matches the declared voter**, and karma ignores self-votes — so no key can inflate a number with fabricated voters.
 - One-identity-one-vote is enforced per signing identity (plus single-use invite codes for private polls) — this **raises the cost** of duplicate voting but is not a one-human-one-vote mathematical guarantee.
 - Encrypted chat uses **AES-256-GCM / RSA-OAEP** in the browser. The encryption is strong, but if you lose your key there is no recovery.
 
@@ -119,12 +122,14 @@ bun run dev      # http://localhost:3000
 ### Commands
 
 ```sh
-bun run dev      # Bun dev server with HMR
+bun run dev      # Bundle (watched) + serve from dist/  →  http://localhost:3000
 bun run build    # Production build → dist/ (minified)
-bun run serve    # Serve a build locally
+bun run serve    # Serve an existing build locally
 ```
 
-> **Bundler note:** GenosDB ships a self-contained `dist/` and resolves its own modules (Security Manager, GenosRTC, …) at runtime via `import(new URL('./*.min.js', import.meta.url))`. Rather than bundling it, the app loads it **intact from a single served folder** (`/genosdb/`): `dev`/`build` copy that folder verbatim (into `public/genosdb` for dev, `dist/genosdb` for the build). The build uses `--public-path=/` so hashed assets resolve from any nested SPA route.
+> **How GenosDB is bundled.** The app imports GenosDB the canonical way — `import { gdb } from "genosdb"` — so the bundler **inlines GenosDB's core straight into the app bundle**. GenosDB then loads its *optional* plugins (`sm`, `genosrtc`, `geo`, …) at runtime via `new URL('./*.min.js', import.meta.url)`, resolved next to the output bundle, and **only the plugins in use are fetched** (this build never pulls `ai`, `nlq` or `geo`). Bun doesn't emit those `.min.js`, so [`scripts/copy-genosdb.js`](scripts/copy-genosdb.js) copies them to the build root beside the bundle — the *"copy the assets after the build"* step from GenosDB's [bundler guide](https://github.com/estebanrfp/gdb/blob/main/docs/bundler-configuration.md).
+>
+> `dev` and `build` share the **same bundle-to-disk pipeline** (Bun's HMR dev server resolves `import.meta.url` to a `file://` path the browser blocks, so dev mirrors production rather than diverging from it). The output is plain **static hosting, not a backend**: *serverless* here means no application server ever processes your data — it all runs peer-to-peer in the browser.
 
 ## Deploy (Netlify)
 
@@ -138,7 +143,7 @@ bun run serve    # Serve a build locally
 
 ### Stack
 
-Vanilla DOM + a tiny `signal()` primitive and a history-API router on the front end; **GenosDB** for data, identity and P2P sync. Built and served with **[Bun](https://bun.sh)**. Installing GenosDB pulls **zero transitive dependencies** — it is the only one.
+Vanilla DOM + a tiny `signal()` primitive and a history-API router on the front end; **GenosDB 0.16.0** for data, identity and P2P sync. Built and served with **[Bun](https://bun.sh)**. Installing GenosDB pulls **zero transitive dependencies** — it is the only one.
 
 ### Data model
 
@@ -169,13 +174,14 @@ Everything is a signed GenosDB node, queried reactively with `db.map`:
 | [`services/moderation.js`](src/services/moderation.js) | Delegated, community-scoped `delete` grants |
 | [`services/search.js`](src/services/search.js) | Field-level `$text` search over the graph |
 | [`services/images.js`](src/services/images.js) | Canvas compression → base64 image nodes |
+| [`services/badges.js`](src/services/badges.js) · [`tier-watch.js`](src/services/tier-watch.js) | Karma reward tiers (animated inline-SVG badges) + reactive tier-up toast |
 | [`services/net.js`](src/services/net.js) | Live P2P peer tracking |
 
 ### How a vote works
 
 1. You select an option; the app writes a **signed `vote` node** keyed `pollId:yourAddress` — one vote per identity, re-voting updates it in place.
 2. The Security Manager signs the operation automatically, and peers verify it on receipt.
-3. The poll's tally is **derived** by aggregating its vote nodes — there are no shared counters to race on.
+3. The poll's tally is **derived** by aggregating its vote nodes — counting only those whose verified signer matches the voter — so there are no shared counters to race on and no forged voters to inflate it.
 4. The node syncs to peers in real time over GenosRTC (WebRTC) — and to your other tabs instantly.
 
 ### Project layout
@@ -185,7 +191,7 @@ src/
 ├─ db/         gdb.js — the single GenosDB instance · schema.js — node types + id schemes
 ├─ state/      signal.js — reactive primitive · session.js — identity signals
 ├─ router/     router.js — history-API SPA router, lazy-loaded views
-├─ ui/         base.js — html/esc helpers · shell.js — top bar + router outlet
+├─ ui/         base.js — html/esc helpers · shell.js — top bar · toast.js — tier-up toasts
 ├─ services/   data + identity logic, all backed by GenosDB
 ├─ views/      page modules: async (params) => HTMLElement
 ├─ utils/      markdown · format · encryption (AES) · keystore (IndexedDB)
