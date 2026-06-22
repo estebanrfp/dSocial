@@ -65,7 +65,7 @@ InterPoll runs entirely on **GenosDB** — there are no servers to operate:
 
 **2. The graph (the data).** Communities, posts, comments, polls, votes, messages and profiles are stored as nodes in a local graph (persisted to your browser's OPFS storage). Each vote is its own signed node, so concurrent votes never overwrite each other — tallies are *derived*, not mutated.
 
-**3. The mesh (the sync).** GenosDB connects peers directly over WebRTC, using decentralised Nostr relays only for discovery (signaling) — never for your data. Changes propagate peer-to-peer in real time, and across your own browser tabs instantly.
+**3. The mesh (the sync).** GenosDB connects peers directly over **GenosRTC** — its peer-to-peer networking layer, built on WebRTC — using decentralised Nostr relays only for discovery (signaling), never for your data. Changes propagate peer-to-peer in real time, and across your own browser tabs instantly.
 
 **4. Roles & moderation (earned, not granted).** New identities start as guests and climb to member, then trusted, by participating — under public rules every peer can verify. Moderation is per-community via node-level ACLs: a community owner and their delegated moderators can remove content in that community only.
 
@@ -82,7 +82,7 @@ InterPoll runs entirely on **GenosDB** — there are no servers to operate:
             │                          ▼                                      │
             │            Security Manager · your key (BIP39 / passkey)        │
             └─────────────────────────────┬───────────────────────────────────┘
-                                          │ signed delta sync over WebRTC
+                                          │ signed delta sync over GenosRTC (WebRTC)
                             ┌─────────────┴─────────────┐
                             ▼                           ▼
                    ┌─────────────────┐         ┌─────────────────┐
@@ -176,7 +176,7 @@ Everything is a signed GenosDB node, queried reactively with `db.map`:
 1. You select an option; the app writes a **signed `vote` node** keyed `pollId:yourAddress` — one vote per identity, re-voting updates it in place.
 2. The Security Manager signs the operation automatically, and peers verify it on receipt.
 3. The poll's tally is **derived** by aggregating its vote nodes — there are no shared counters to race on.
-4. The node syncs to peers in real time over WebRTC (and to your other tabs instantly).
+4. The node syncs to peers in real time over GenosRTC (WebRTC) — and to your other tabs instantly.
 
 ### Project layout
 
