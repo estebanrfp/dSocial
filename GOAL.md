@@ -27,7 +27,8 @@ Antes de usar cualquier API (`db.map/get/put`, `sm`, `acls`, operadores como
 > (`interpoll-genosdb`) son **referencia de solo lectura**. **NUNCA** los edites,
 > escribas, crees/borres archivos ni alteres nada en ellos — ni código, ni docs,
 > ni config, ni `dist`. Todo tu trabajo ocurre **exclusivamente** dentro de
-> `interpoll-vanilla`. Si necesitas algo de GenosDB, **léelo y replícalo** en tu repo.
+> `interpoll-vanilla`. De GenosDB **solo se lee para comprender y aplicar** bien su
+> API y comportamiento — **nunca para copiar ni replicar** su código.
 
 ## Referencia de features (NO MODIFICAR)
 El fork Vue+Ionic en `/Users/estebanrfp/Projects/Deployments/interpoll-genosdb`.
