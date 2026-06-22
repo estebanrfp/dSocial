@@ -21,7 +21,13 @@ Scaffold ya funcionando y en **JS puro**: Bun (runtime+bundler), `index.html` +
 
 Antes de usar cualquier API (`db.map/get/put`, `sm`, `acls`, operadores como
 `$text`/`$in`, governance…), **léela** en docs/ejemplos/código y verifícala.
-**NO modifiques** el proyecto GenosDB ni el fork; solo léelos como referencia.
+
+> ⚠️ **REGLA CRÍTICA — GenosDB es de SOLO LECTURA.** El repo de GenosDB
+> (`/Users/estebanrfp/Projects/Deployments/GDB-Project/GenosDB`) **y** el fork
+> (`interpoll-genosdb`) son **referencia de solo lectura**. **NUNCA** los edites,
+> escribas, crees/borres archivos ni alteres nada en ellos — ni código, ni docs,
+> ni config, ni `dist`. Todo tu trabajo ocurre **exclusivamente** dentro de
+> `interpoll-vanilla`. Si necesitas algo de GenosDB, **léelo y replícalo** en tu repo.
 
 ## Referencia de features (NO MODIFICAR)
 El fork Vue+Ionic en `/Users/estebanrfp/Projects/Deployments/interpoll-genosdb`.
@@ -110,6 +116,7 @@ Esteban — preferentemente repo-linked (auto-deploy en `push`), como el fork. D
 todo listo para publicar, pero **no publiques de forma autónoma**.
 
 ## No hagas
-Usar ningún framework/librería de UI; TypeScript; bundlear GenosDB; tocar el fork
-o el repo GenosDB; añadir trailer de IA a los commits; **publicar/desplegar de
-forma autónoma** sin la aprobación de Esteban.
+Usar ningún framework/librería de UI; TypeScript; bundlear GenosDB; **escribir,
+modificar, crear o borrar archivos en el repo de GenosDB o en el fork** (son de
+SOLO lectura); añadir trailer de IA a los commits; **publicar/desplegar de forma
+autónoma** sin la aprobación de Esteban.
