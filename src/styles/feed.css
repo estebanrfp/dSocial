@@ -20,6 +20,28 @@
   gap: var(--s-4);
 }
 
+/* Infinite-scroll sentinel: a centered loading row spanning the whole grid. */
+.feed-more {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  padding: var(--s-4) 0;
+}
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+}
+
 /* Avatar */
 .avatar {
   width: 44px;

@@ -2,7 +2,7 @@
 // posts and polls (newest first). Scores/tallies derive from signed votes.
 import { html, esc } from "../ui/base.js";
 import { getCommunity, isMember, joinCommunity, addModerator, removeModerator } from "../services/communities.js";
-import { subscribePosts, voteOnPost, deletePost } from "../services/posts.js";
+import { loadPostsPage, watchPostScores, getPost, voteOnPost, deletePost } from "../services/posts.js";
 import { subscribePolls } from "../services/polls.js";
 import { stripMarkdown } from "../utils/markdown.js";
 import { timeAgo, plural } from "../utils/format.js";
@@ -95,17 +95,23 @@ export default async function community({ communityId }) {
   renderActions(member);
 
   const feed = el.querySelector("[data-feed]");
-  let posts = [];
+  const postMap = new Map(); // id -> post: cursor-paginated, kept live in place
   let polls = [];
+  let cursor = null;
+  let feedDone = false;
+  let loadingMore = false;
+
   const renderFeed = () => {
     const items = [
       ...polls.map((p) => ({ kind: "poll", createdAt: p.createdAt, data: p })),
-      ...posts.map((p) => ({ kind: "post", createdAt: p.createdAt, data: p })),
+      ...[...postMap.values()].map((p) => ({ kind: "post", createdAt: p.createdAt, data: p })),
     ].sort((a, b) => b.createdAt - a.createdAt);
 
-    if (!items.length) { feed.innerHTML = html`<div class="empty"><p>Nothing here yet.</p></div>`; return; }
+    if (!items.length && feedDone) { feed.innerHTML = html`<div class="empty"><p>Nothing here yet.</p></div>`; return; }
     const mod = canModerate();
-    feed.innerHTML = items.map((it) => (it.kind === "poll" ? pollCard(it.data) : postCard(it.data, mod, me))).join("");
+    feed.innerHTML =
+      items.map((it) => (it.kind === "poll" ? pollCard(it.data) : postCard(it.data, mod, me))).join("") +
+      (feedDone ? "" : html`<div class="feed-more" data-sentinel aria-hidden="true"><span class="spinner"></span></div>`);
     feed.querySelectorAll("[data-vote]").forEach((btn) =>
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
@@ -121,11 +127,46 @@ export default async function community({ communityId }) {
         try { await deletePost(btn.dataset.delPost); } catch (err) { alert("Delete denied: " + err.message); }
       }),
     );
+    const sentinel = feed.querySelector("[data-sentinel]");
+    if (sentinel) io.observe(sentinel);
   };
 
-  const unsubPosts = await subscribePosts(communityId, (p) => { posts = p; renderFeed(); });
+  // Cursor pagination: pull one page at a time as the sentinel scrolls into view —
+  // never loads the whole community at once.
+  const loadMore = async () => {
+    if (feedDone || loadingMore) return;
+    loadingMore = true;
+    try {
+      const { posts: page, nextCursor } = await loadPostsPage(communityId, cursor);
+      for (const p of page) postMap.set(p.id, p);
+      cursor = nextCursor;
+      if (!nextCursor) feedDone = true;
+    } catch (err) {
+      console.error("Feed pagination failed:", err);
+      feedDone = true;
+    }
+    if (feedDone) io.disconnect(); // no more pages — stop observing
+    loadingMore = false;
+    renderFeed();
+  };
+  const io = new IntersectionObserver(
+    (entries) => { if (entries.some((e) => e.isIntersecting)) loadMore(); },
+    { rootMargin: "400px" },
+  );
+
+  // Keep already-loaded posts live (vote scores / comment counts) without re-scanning.
+  const rescore = async (pid) => {
+    if (!postMap.has(pid)) return;
+    const fresh = await getPost(pid);
+    if (fresh) postMap.set(pid, fresh);
+    else postMap.delete(pid);
+    renderFeed();
+  };
+
+  const unsubWatch = await watchPostScores(communityId, rescore);
   const unsubPolls = await subscribePolls(communityId, (p) => { polls = p; renderFeed(); });
-  el._cleanup = () => { unsubPosts?.(); unsubPolls?.(); };
+  await loadMore(); // first page
+  el._cleanup = () => { io.disconnect(); unsubWatch?.(); unsubPolls?.(); };
   return el;
 }
 

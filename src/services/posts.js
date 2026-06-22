@@ -78,6 +78,31 @@ export async function getPost(postId) {
   return build(result.value);
 }
 
+/** Posts per page for the community feed's cursor pagination. */
+export const POSTS_PAGE = 20;
+
+/**
+ * Load one page of a community's posts, newest first, using GenosDB's native
+ * cursor pagination ($after the previous page's last id + $limit) — no full scan,
+ * stable under live writes. `cursor` is null for the first page.
+ * @returns {Promise<{posts: object[], nextCursor: string|null}>} nextCursor is null at the end.
+ */
+export async function loadPostsPage(communityId, cursor = null, limit = POSTS_PAGE) {
+  const { results } = await db.map({
+    query: { type: TYPE.post, communityId },
+    field: "createdAt",
+    order: "desc",
+    $limit: limit,
+    $after: cursor,
+  });
+  const posts = await Promise.all(
+    results.filter((n) => n.value?.type === TYPE.post).map((n) => build(n.value)),
+  );
+  // A short page means we've reached the end; otherwise the last id is the next cursor.
+  const nextCursor = results.length < limit ? null : results[results.length - 1].id;
+  return { posts, nextCursor };
+}
+
 /**
  * Delete a post (owner or delegated moderator, enforced by ACLs). When the author
  * deletes their own post, re-derive their postCount so dropping below the
@@ -148,4 +173,17 @@ export async function subscribePosts(communityId, onChange) {
   }
   emit();
   return () => { postUnsub?.(); voteUnsub?.(); commentUnsub?.(); };
+}
+
+/**
+ * Live score updates for a *paginated* community feed (pairs with loadPostsPage):
+ * calls `onScore(postId)` whenever a post's votes or comments change, so the view
+ * can re-derive just that already-loaded post — no full re-scan. Returns an
+ * unsubscribe. (Brand-new posts surface on reload; pagination owns the river.)
+ */
+export async function watchPostScores(communityId, onScore) {
+  const relay = ({ value }) => { const pid = value?.postId; if (pid) onScore(pid); };
+  const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.postVote } }, relay);
+  const { unsubscribe: commentUnsub } = await db.map({ query: { type: TYPE.comment, communityId } }, relay);
+  return () => { voteUnsub?.(); commentUnsub?.(); };
 }
