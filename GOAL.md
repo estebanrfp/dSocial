@@ -70,7 +70,11 @@ legacy complexity.
 -   No UI frameworks
 -   No CSS frameworks
 
-Serve GenosDB from `/genosdb` without bundling it.
+Bundle GenosDB the canonical way (`import { gdb } from "genosdb"`): the bundler
+inlines its core, and only its runtime plugins (`*.min.js`, loaded by the engine
+via `import.meta.url`) are copied beside the output bundle. `dev` and `build`
+share one bundle-to-disk pipeline — Bun's HMR dev server resolves `import.meta.url`
+to a browser-blocked `file://`, so dev mirrors production.
 
 ## Architecture
 
@@ -182,8 +186,9 @@ The project is complete only after:
 
 ## Production
 
-Prepare `netlify.toml`, verify `bun run build`, ensure `dist/genosdb`
-exists and SPA redirects are configured.
+Prepare `netlify.toml`, verify `bun run build`, ensure GenosDB's runtime
+plugins (`dist/*.min.js`) are emitted beside the bundle, and SPA redirects are
+configured.
 
 Deployment requires explicit approval from Esteban.
 
@@ -191,7 +196,7 @@ Deployment requires explicit approval from Esteban.
 
 -   UI frameworks
 -   TypeScript
--   Bundling GenosDB
+-   Breaking GenosDB's plugin resolution (its `*.min.js` must ship beside the bundle)
 -   Modifying GenosDB
 -   Modifying the reference implementation
 -   Automatic deployment
