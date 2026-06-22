@@ -1,44 +1,198 @@
 # InterPoll (vanilla)
 
-A peer-to-peer polling and forum app built on **[GenosDB](https://github.com/estebanrfp/gdb)** — vanilla JavaScript, no UI framework. Every action is a signed node; data syncs P2P over WebRTC; there is no backend.
+> *A voice for everyone — no servers, no gatekeepers, signed by default.*
 
-## Features
+> ### ▶️ [**Live demo**](https://interpoll-vanilla-showcase.netlify.app)
+> Try it now: **https://interpoll-vanilla-showcase.netlify.app** — a running,
+> serverless build. Open it in **two browsers** to watch communities, polls,
+> votes and encrypted chat sync peer-to-peer, with no backend in between.
 
-- **Communities, posts & comments** — Reddit-style feeds; Markdown posts (sanitised, no deps); threaded comments. Up/down votes derive scores and **karma** from signed vote nodes — no peer mutates a shared counter.
-- **Polls** — single/multi-choice, public or invite-only; one deterministic vote per identity; live tallies across peers.
-- **End-to-end encrypted chat** — 1:1 DMs (RSA-OAEP, encrypted for both parties) and group **rooms** (AES-256-GCM, key shared via invite link or password). The synced node *is* the delivery.
-- **Governance (RBAC)** — open, rule-driven promotion (`guest → member → trusted`); a superadmin signs each role change per public rules. See [`src/db/gdb.js`](src/db/gdb.js).
-- **Moderation** — delegated, cooperative delete: an author grants `delete` on their node to the community owner + moderators, scoped to that community. No global censor.
-- **Zero-trust** — a peer cannot alter or delete another peer's signed content; the operation is rejected.
-- **Profiles, search, images, network** — derived-stat profiles with inline editing; field-level `$text` search; base64 images stored as GenosDB nodes (client-side canvas compression); a live P2P peer view.
+> ### 🛰️ A from-scratch GenosDB showcase
+> InterPoll's concept comes from [theEndless11's original InterPoll](https://github.com/theEndless11/decentralised).
+> This is an **independent, from-scratch build in vanilla JavaScript** — no
+> framework, no TypeScript — that rebuilds the experience on **[GenosDB](https://github.com/estebanrfp/gdb)**
+> to show how the whole app runs on a single peer-to-peer database: **one
+> dependency, zero servers, signed by default.**
 
-## Stack
+---
 
-- **Runtime / bundler:** [Bun](https://bun.sh)
-- **Data + identity + P2P:** GenosDB (the single runtime dependency)
-- **UI:** vanilla DOM + Web Components, reactive over `db.map`
-- **No** framework, no virtual DOM, no central server.
+## What is InterPoll?
 
-## Develop
+InterPoll is a **free, open, decentralised polling + discussion platform** — a place where communities vote, post, comment, and chat without any single company in control.
+
+When you vote, publish a post, or send a message, your activity is stored locally first and then synced peer-to-peer across the network. No central server owns your community history. Every action is cryptographically signed by an identity that lives only on your device, and posts replicate across peers so they are harder to suppress or quietly erase.
+
+**Anyone can create a community, earn trust under public rules, and moderate their own space** — with no algorithm deciding what you see and no central team that can silently remove your poll.
+
+---
+
+## Why it matters
+
+Traditional online communities share one weakness: **one server, one point of control**. The company that runs it can delete a poll, hide a post, alter results, or go offline.
+
+InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer graph database with built-in cryptographic identity:
+
+- **No single owner.** Data lives on every participant's device and syncs directly peer-to-peer. There is no backend to capture or shut down.
+- **Your vote, signed by you.** Every action is signed by an identity that lives only on your device. No peer can forge a vote or post in your name.
+- **Owned by you, not just signed by you.** Your content is yours to remove — no peer can delete your post, vote, message or profile; only you, or a moderator a community owner delegates to.
+- **Earned trust.** Roles aren't handed out: you climb `guest → member → trusted` by participating, under public rules every peer can verify.
+- **Private chat.** 1:1 messages and group rooms are end-to-end encrypted in your browser; peers only ever relay ciphertext.
+
+---
+
+## Key features
+
+| Feature | What it means for you |
+|---|---|
+| **Cryptographically signed actions** | Every vote, post, comment and message is signed by your device identity and verified by peers. Forgery is impossible without your key. |
+| **Communities, posts & threaded comments** | Reddit-style feeds with Markdown posts (sanitised, zero dependencies) and votable threaded comments. |
+| **Derived tallies & karma** | Scores, poll tallies and user karma are *derived* by aggregating signed vote nodes — no shared counter to race on, no number a peer can fake. |
+| **Polls, public or invite-only** | Single/multi-choice polls; one deterministic vote per identity; single-use invite codes for private polls. |
+| **End-to-end encrypted chat** | 1:1 DMs (RSA-OAEP) and group rooms (AES-256-GCM, key shared by invite link or password). The synced node *is* the delivery. |
+| **Earned trust (governance)** | Climb `guest → member → trusted` under public `governanceRules`; a superadmin only *signs* the promotions the rules dictate. |
+| **Community-scoped moderation** | A community's creator (and moderators they delegate to) can remove content in *that* community only — via delegated `delete` grants, never a platform-wide censor. |
+| **Yours to delete — and only yours** | Every node is owned by your device identity. No other peer can delete or overwrite it; the operation is rejected. |
+| **Passkey or recovery phrase** | Protect your identity with a WebAuthn passkey or a 12-word BIP39 recovery phrase. |
+| **Images, search, live network** | Base64 images stored as nodes (client-side canvas compression); field-level `$text` search; a live view of connected P2P peers. |
+
+---
+
+## How it works (plain language)
+
+InterPoll runs entirely on **GenosDB** — there are no servers to operate:
+
+**1. Your identity (the key).** On first use you generate an identity that lives only on your device, protected by a passkey or recovery phrase. It signs every action automatically; peers verify those signatures, so nobody can act as you.
+
+**2. The graph (the data).** Communities, posts, comments, polls, votes, messages and profiles are stored as nodes in a local graph (persisted to your browser's OPFS storage). Each vote is its own signed node, so concurrent votes never overwrite each other — tallies are *derived*, not mutated.
+
+**3. The mesh (the sync).** GenosDB connects peers directly over WebRTC, using decentralised Nostr relays only for discovery (signaling) — never for your data. Changes propagate peer-to-peer in real time, and across your own browser tabs instantly.
+
+**4. Roles & moderation (earned, not granted).** New identities start as guests and climb to member, then trusted, by participating — under public rules every peer can verify. Moderation is per-community via node-level ACLs: a community owner and their delegated moderators can remove content in that community only.
+
+```
+            ┌───────────────────────── Your browser ──────────────────────────┐
+            │                                                                 │
+            │   views/ ───────────────►   db.map()   ◄──── reactive updates   │
+            │   (vanilla DOM)             subscriptions                       │
+            │      │                            ▲                             │
+            │      ▼                            │                             │
+            │   services/ ─────────►  GenosDB  ─┴─►  Graph store · OPFS       │
+            │   posts·polls·chat       │ signs                                │
+            │   roles·moderation       │ every action                         │
+            │                          ▼                                      │
+            │            Security Manager · your key (BIP39 / passkey)        │
+            └─────────────────────────────┬───────────────────────────────────┘
+                                          │ signed delta sync over WebRTC
+                            ┌─────────────┴─────────────┐
+                            ▼                           ▼
+                   ┌─────────────────┐         ┌─────────────────┐
+                   │   Peer browser  │   ···   │   Peer browser  │
+                   └─────────────────┘         └─────────────────┘
+
+      Nostr relays ···· signaling / peer discovery only · never your data ····►
+```
+
+> **In short:** your communities, posts, votes and messages exist on your device and on your peers' devices at once. Erasing them would mean erasing every copy simultaneously — sooner or later, a peer with a copy reconnects and reseeds the network.
+
+---
+
+## Honest about the limits
+
+InterPoll is designed to be **harder to censor and tamper with than a single-server platform** — not impossible:
+
+- Data survives as long as **at least one honest peer** keeps a copy and later reconnects.
+- A signature **cannot be forged** without your device key; peers reject any unsigned or invalidly-signed operation.
+- One-identity-one-vote is enforced per signing identity (plus single-use invite codes for private polls) — this **raises the cost** of duplicate voting but is not a one-human-one-vote mathematical guarantee.
+- Encrypted chat uses **AES-256-GCM / RSA-OAEP** in the browser. The encryption is strong, but if you lose your key there is no recovery.
+
+---
+
+## Quick start
+
+InterPoll is a pure client app — **no backend, no relay server to run.**
 
 ```sh
 bun install
 bun run dev      # http://localhost:3000
 ```
 
-`dev`/`build` first copy GenosDB's dist into `public/genosdb` (served intact, never bundled) so the engine's runtime-loaded plugins resolve.
-
-## Build
+### Commands
 
 ```sh
-bun run build    # → dist/ (minified, GenosDB copied into dist/genosdb)
+bun run dev      # Bun dev server with HMR
+bun run build    # Production build → dist/ (minified)
+bun run serve    # Serve a build locally
 ```
+
+> **Bundler note:** GenosDB ships a self-contained `dist/` and resolves its own modules (Security Manager, GenosRTC, …) at runtime via `import(new URL('./*.min.js', import.meta.url))`. Rather than bundling it, the app loads it **intact from a single served folder** (`/genosdb/`): `dev`/`build` copy that folder verbatim (into `public/genosdb` for dev, `dist/genosdb` for the build). The build uses `--public-path=/` so hashed assets resolve from any nested SPA route.
 
 ## Deploy (Netlify)
 
 [`netlify.toml`](netlify.toml) is preconfigured: `bun run build` → publish `dist`, with an SPA redirect (`/* → /index.html`). Link the repo on Netlify for auto-deploy on push.
 
 > **Superadmins** live in [`src/db/gdb.js`](src/db/gdb.js). For this public showcase a throwaway **demo superadmin** (public seed) is included alongside the operator address so the governance engine can run for any visitor — drop it for a fully private network.
+
+---
+
+## Technical overview
+
+### Stack
+
+Vanilla DOM + a tiny `signal()` primitive and a history-API router on the front end; **GenosDB** for data, identity and P2P sync. Built and served with **[Bun](https://bun.sh)**. Installing GenosDB pulls **zero transitive dependencies** — it is the only one.
+
+### Data model
+
+Everything is a signed GenosDB node, queried reactively with `db.map`:
+
+| Node type | Purpose |
+|---|---|
+| `community`, `membership` | Communities and signed memberships (member count derived) |
+| `post`, `postVote` | Posts and their up/down votes (score derived) |
+| `comment`, `commentVote` | Threaded comments and their votes (score + karma derived) |
+| `poll`, `vote` | A poll and its one-per-identity signed votes (tally derived) |
+| `dm`, `chatKey` | E2E direct messages (RSA-OAEP) + published public keys |
+| `chatRoom`, `chatMessage`, `roomMember` | Encrypted group rooms (AES-256-GCM) + derived membership |
+| `user` | Profile keyed by address; `user:<address>` also holds governance standing (role, `postCount`) |
+| `image` | Canvas-compressed images stored as base64 nodes |
+
+### Key services
+
+| File | Responsibility |
+|---|---|
+| [`db/gdb.js`](src/db/gdb.js) | The single GenosDB instance — SM config, RBAC roles + `governanceRules`, ACLs |
+| [`services/identity.js`](src/services/identity.js) | Onboarding (create/recover BIP39, passkey), profiles, derived stats + karma |
+| [`services/roles.js`](src/services/roles.js) | Governance standing (the `user:<address>` node), live role subscription |
+| [`services/communities.js`](src/services/communities.js) | Communities, derived membership, moderators |
+| [`services/posts.js`](src/services/posts.js) · [`comments.js`](src/services/comments.js) | Posts and threaded comments with signed voting |
+| [`services/polls.js`](src/services/polls.js) | Polls, one-per-identity votes, derived tallies, invite codes |
+| [`services/chat.js`](src/services/chat.js) · [`chatrooms.js`](src/services/chatrooms.js) | E2E direct messages and encrypted group rooms |
+| [`services/moderation.js`](src/services/moderation.js) | Delegated, community-scoped `delete` grants |
+| [`services/search.js`](src/services/search.js) | Field-level `$text` search over the graph |
+| [`services/images.js`](src/services/images.js) | Canvas compression → base64 image nodes |
+| [`services/net.js`](src/services/net.js) | Live P2P peer tracking |
+
+### How a vote works
+
+1. You select an option; the app writes a **signed `vote` node** keyed `pollId:yourAddress` — one vote per identity, re-voting updates it in place.
+2. The Security Manager signs the operation automatically, and peers verify it on receipt.
+3. The poll's tally is **derived** by aggregating its vote nodes — there are no shared counters to race on.
+4. The node syncs to peers in real time over WebRTC (and to your other tabs instantly).
+
+### Project layout
+
+```
+src/
+├─ db/         gdb.js — the single GenosDB instance · schema.js — node types + id schemes
+├─ state/      signal.js — reactive primitive · session.js — identity signals
+├─ router/     router.js — history-API SPA router, lazy-loaded views
+├─ ui/         base.js — html/esc helpers · shell.js — top bar + router outlet
+├─ services/   data + identity logic, all backed by GenosDB
+├─ views/      page modules: async (params) => HTMLElement
+├─ utils/      markdown · format · encryption (AES) · keystore (IndexedDB)
+└─ styles/     design tokens + per-feature CSS
+```
+
+---
 
 ## Author
 
