@@ -43,12 +43,21 @@ config de `interpoll-genosdb/src/services/gdbServices.ts`: Security Manager con
 - **Lazy loading** de vistas por sección (`import()` dinámico).
 - Router propio mínimo (history API). Coherente, mantenible, **escalable**.
 
-## Diseño
-Minimalismo **mucho más fuerte y atractivo** que el fork. Dark, tokens CSS propios
-(reaprovecha la paleta indigo/glass del fork). **Sin estilos inline**; todo en CSS
-con variables. UI y código/comentarios **en inglés**.
+## Diseño (estilo TOTALMENTE NUEVO, de alto impacto)
+**NO heredes el look del fork.** Diseña un sistema visual **propio, nuevo,
+sofisticado y de alto impacto**: paleta, tipografía, escala de espaciado,
+jerarquía, radios, sombras y microinteracciones coherentes y memorables.
+Minimalismo fuerte (dark de base), cero ruido. **UX óptima**: flujos claros, sin
+fricción, **una sola forma de hacer cada cosa** (sin acciones duplicadas).
+**Sin estilos inline**; todo en CSS con variables/tokens. UI y código/comentarios
+**en inglés**.
 
-## Features (paridad con el fork)
+## Features (paridad FUNCIONAL con el fork)
+Reproduce **TODAS las opciones** del fork — pero **paridad funcional, no copia
+1:1**: elimina las redundancias y el legacy que ya detectamos (botones de acción
+duplicados, vistas muertas tipo "Chain Explorer", capas de voto duplicadas,
+navegación repetida). Las funciones, sí; el cruft, no.
+
 Identidad SM (onboarding mnemónica BIP39); comunidades (públicas / privadas con
 invite-code / cifradas); posts con markdown; encuestas (voto nativo = nodo `vote`
 firmado ACL-owned, recuento derivado, un voto por identidad, invite-codes);
@@ -74,12 +83,19 @@ operación firmada y verificada por el Security Manager).
 
 ## Definición de TERMINADO (no termines antes)
 No basta con que compile. Arranca `bun run dev` y **prueba en un navegador real**
-(con playwright) que **cada sección** funciona end-to-end y sin errores de consola:
-identidad, crear/leer comunidades, posts, encuestas + voto + recuento, comentarios,
-chat, governance, moderación, búsqueda, perfiles, settings. Verifica además el
-**sync P2P** abriendo **dos contextos de navegador** (dos identidades) y comprobando
-que los datos propagan entre ellos. El trabajo termina **solo** cuando has
-comprobado que todo funciona.
+(con playwright) que **TODAS las opciones** funcionan end-to-end y sin errores de
+consola: identidad, comunidades (pública / privada con invite-code / cifrada),
+posts, encuestas + voto + recuento, comentarios, karma, chat + salas, governance,
+moderación, búsqueda, perfiles, imágenes, settings, red.
+
+Verifica además, abriendo **dos (o más) navegadores con identidades distintas**:
+- **Sync P2P**: lo que crea/vota un peer aparece en el otro en vivo.
+- **Zero-trust / governance**: un peer **NO** puede borrar ni alterar el contenido
+  firmado de otro (la operación se rechaza); el ascenso de rol por governance
+  (guest→member→trusted) propaga y persiste entre peers.
+
+El trabajo termina **solo** cuando has comprobado, en el navegador, que **todo**
+funciona — incluidos el **P2P multi-navegador** y el **zero-trust**.
 
 ## No hagas
 Usar ningún framework/librería de UI; TypeScript; bundlear GenosDB; tocar el fork
