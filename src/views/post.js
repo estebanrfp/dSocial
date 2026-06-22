@@ -7,8 +7,9 @@ import { subscribeComments, createComment, voteOnComment } from "../services/com
 import { renderMarkdown } from "../utils/markdown.js";
 import { timeAgo } from "../utils/format.js";
 import { abbr } from "../state/session.js";
-import { activeAddress } from "../services/identity.js";
+import { activeAddress, getKarma } from "../services/identity.js";
 import { getImage } from "../services/images.js";
+import { badgeChip } from "../services/badges.js";
 
 /** @returns {Promise<HTMLElement>} */
 export default async function postView({ postId }) {
@@ -23,6 +24,7 @@ export default async function postView({ postId }) {
 
   const me = activeAddress();
   const mine = !!me && me.toLowerCase() === String(post.authorId).toLowerCase();
+  const authorKarma = await getKarma(post.authorId);
 
   el.innerHTML = html`
     <a class="back" href="/c/${esc(post.communityId)}">← Back</a>
@@ -37,7 +39,7 @@ export default async function postView({ postId }) {
         <div class="markdown">${renderMarkdown(post.content)}</div>
         ${post.imageId ? html`<img class="post-image" data-postimg alt="Post image" />` : ""}
         <div class="post-meta-row">
-          <span class="meta">${esc(abbr(post.authorId))} · ${esc(timeAgo(post.createdAt))}${post.editedAt ? " · edited" : ""}</span>
+          <span class="meta">${badgeChip(authorKarma)} ${esc(abbr(post.authorId))} · ${esc(timeAgo(post.createdAt))}${post.editedAt ? " · edited" : ""}</span>
           ${
             mine
               ? html`<div class="post-actions">

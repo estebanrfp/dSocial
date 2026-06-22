@@ -10,6 +10,7 @@ import { abbr } from "../state/session.js";
 import { timeAgo } from "../utils/format.js";
 import { stripMarkdown } from "../utils/markdown.js";
 import { SUPER_ADMINS } from "../db/gdb.js";
+import { badgeHero } from "../services/badges.js";
 
 const ROLE_LABEL = { guest: "Guest", member: "Member", trusted: "Trusted", superadmin: "Superadmin" };
 
@@ -62,6 +63,8 @@ export default async (params) => {
       <div class="stat"><span class="stat-num">${stats.comments}</span><span class="stat-label">Comments</span></div>
       <div class="stat"><span class="stat-num">${stats.communities}</span><span class="stat-label">Communities</span></div>
     </div>
+
+    ${badgeHero(stats.karma)}
 
     <h2 class="section-title">Posts</h2>
     <div class="grid" data-posts></div>

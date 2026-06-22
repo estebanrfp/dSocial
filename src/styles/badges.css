@@ -1,0 +1,134 @@
+/* Karma badges — inline-SVG reward tiers, animated with CSS only. Colors come
+   from the per-badge --bg-a / --bg-b set inline on each <svg>. */
+
+.badge-svg {
+  display: inline-block;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+/* Medal: ribbon, engraved ring, central star */
+.badge-ribbon {
+  fill: var(--bg-b);
+  opacity: 0.85;
+}
+.badge-ring {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.4);
+  stroke-width: 1.4;
+}
+.badge-star {
+  fill: rgba(255, 255, 255, 0.92);
+}
+
+/* Gem: faceted highlights/shadow for a 3-D read */
+.badge-facet {
+  fill: rgba(255, 255, 255, 0.38);
+}
+.badge-facet2 {
+  fill: rgba(255, 255, 255, 0.16);
+}
+.badge-facet3 {
+  fill: rgba(0, 0, 0, 0.22);
+}
+
+/* Crown */
+.badge-base {
+  fill: var(--bg-b);
+}
+.badge-jewel {
+  fill: rgba(255, 255, 255, 0.9);
+}
+
+/* Spark: twinkling accent dot */
+.badge-spark-dot {
+  fill: rgba(255, 255, 255, 0.95);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: badge-twinkle 2.4s ease-in-out infinite;
+}
+@keyframes badge-twinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Active/featured badge: gentle float + a glow tinted by the tier color, and a
+   slow shimmer on the star/jewels so it reads as an earned "trophy". */
+.badge-sweep {
+  animation: badge-float 3.6s ease-in-out infinite;
+  filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--bg-b) 50%, transparent));
+}
+.badge-sweep .badge-star,
+.badge-sweep .badge-jewel,
+.badge-sweep .badge-facet {
+  animation: badge-shimmer 2.8s ease-in-out infinite;
+}
+@keyframes badge-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes badge-shimmer {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+/* Compact byline chip */
+.badge-chip {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+/* ── Profile badge block ──────────────────────────────────────────────────── */
+.badge-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  margin-bottom: var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.badge-hero-icon {
+  flex: none;
+  line-height: 0;
+}
+.badge-hero-body {
+  flex: 1;
+  min-width: 0;
+}
+.badge-hero-tier {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.badge-hero-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.badge-progress {
+  margin-top: var(--s-3);
+  height: 7px;
+  background: var(--surface-2);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+.badge-progress .bar {
+  height: 100%;
+  width: var(--pct, 0%);
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--bg-a), var(--bg-b));
+  transition: width 0.4s var(--t);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-sweep,
+  .badge-spark-dot,
+  .badge-sweep .badge-star,
+  .badge-sweep .badge-jewel,
+  .badge-sweep .badge-facet {
+    animation: none;
+  }
+}
