@@ -1,5 +1,13 @@
 /* Post detail + comments. */
 
+.post-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+
 /* Markdown Write/Preview toggle (create-post) */
 .field-head {
   display: flex;

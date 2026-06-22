@@ -1,11 +1,13 @@
 // Post detail: rendered Markdown body + vote, and a live comment thread (each
 // comment votable; scores derive from signed votes).
 import { html, esc } from "../ui/base.js";
-import { getPost, voteOnPost } from "../services/posts.js";
+import { navigate } from "../router/router.js";
+import { getPost, voteOnPost, deletePost } from "../services/posts.js";
 import { subscribeComments, createComment, voteOnComment } from "../services/comments.js";
 import { renderMarkdown } from "../utils/markdown.js";
 import { timeAgo } from "../utils/format.js";
 import { abbr } from "../state/session.js";
+import { activeAddress } from "../services/identity.js";
 import { getImage } from "../services/images.js";
 
 /** @returns {Promise<HTMLElement>} */
@@ -19,6 +21,9 @@ export default async function postView({ postId }) {
     return el;
   }
 
+  const me = activeAddress();
+  const mine = !!me && me.toLowerCase() === String(post.authorId).toLowerCase();
+
   el.innerHTML = html`
     <a class="back" href="/c/${esc(post.communityId)}">← Back</a>
     <article class="card post-detail">
@@ -31,7 +36,10 @@ export default async function postView({ postId }) {
         <h1 class="post-title">${esc(post.title)}</h1>
         <div class="markdown">${renderMarkdown(post.content)}</div>
         ${post.imageId ? html`<img class="post-image" data-postimg alt="Post image" />` : ""}
-        <span class="meta">${esc(abbr(post.authorId))} · ${esc(timeAgo(post.createdAt))}</span>
+        <div class="post-meta-row">
+          <span class="meta">${esc(abbr(post.authorId))} · ${esc(timeAgo(post.createdAt))}</span>
+          ${mine ? html`<button class="btn btn-ghost btn-sm" data-del-post>Delete</button>` : ""}
+        </div>
       </div>
     </article>
 
@@ -48,6 +56,18 @@ export default async function postView({ postId }) {
       const img = el.querySelector("[data-postimg]");
       if (data && img) img.src = data;
       else img?.remove();
+    });
+  }
+
+  if (mine) {
+    el.querySelector("[data-del-post]")?.addEventListener("click", async () => {
+      if (!window.confirm("Delete your post?")) return;
+      try {
+        await deletePost(postId);
+        navigate(`/c/${post.communityId}`);
+      } catch (e) {
+        alert("Delete denied: " + e.message);
+      }
     });
   }
 

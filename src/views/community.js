@@ -105,7 +105,7 @@ export default async function community({ communityId }) {
 
     if (!items.length) { feed.innerHTML = html`<div class="empty"><p>Nothing here yet.</p></div>`; return; }
     const mod = canModerate();
-    feed.innerHTML = items.map((it) => (it.kind === "poll" ? pollCard(it.data) : postCard(it.data, mod))).join("");
+    feed.innerHTML = items.map((it) => (it.kind === "poll" ? pollCard(it.data) : postCard(it.data, mod, me))).join("");
     feed.querySelectorAll("[data-vote]").forEach((btn) =>
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
@@ -117,7 +117,7 @@ export default async function community({ communityId }) {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!window.confirm("Delete this post as a moderator?")) return;
+        if (!window.confirm(btn.dataset.mine ? "Delete your post?" : "Delete this post as a moderator?")) return;
         try { await deletePost(btn.dataset.delPost); } catch (err) { alert("Delete denied: " + err.message); }
       }),
     );
@@ -140,8 +140,10 @@ function pollCard(p) {
     </a>`;
 }
 
-function postCard(p, canMod) {
+function postCard(p, canMod, me) {
   const snippet = stripMarkdown(p.content).slice(0, 160);
+  const mine = sameAddr(me, p.authorId);
+  const canDelete = mine || canMod; // the author owns their post; moderators can also remove it
   // The delete control is a sibling of the link (a <button> inside an <a> is
   // invalid HTML and swallows clicks), positioned over the card via CSS.
   return html`
@@ -158,6 +160,6 @@ function postCard(p, canMod) {
           <span class="meta">${esc(abbr(p.authorId))} · ${esc(timeAgo(p.createdAt))} · ${esc(plural(p.commentCount, "comment"))}</span>
         </div>
       </a>
-      ${canMod ? html`<button class="icon-btn post-del" data-del-post="${esc(p.id)}" title="Delete (moderator)" aria-label="Delete post">🗑</button>` : ""}
+      ${canDelete ? html`<button class="icon-btn post-del" data-del-post="${esc(p.id)}" data-mine="${mine ? "1" : ""}" title="${mine ? "Delete your post" : "Delete (moderator)"}" aria-label="Delete post">🗑</button>` : ""}
     </div>`;
 }
