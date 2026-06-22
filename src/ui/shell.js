@@ -7,7 +7,7 @@ import { esc } from "./base.js";
 const NAV = [
   { href: "/home", label: "Home" },
   { href: "/search", label: "Search" },
-  { href: "/chatrooms", label: "Chat" },
+  { href: "/chat", label: "Chat" },
 ];
 
 /**

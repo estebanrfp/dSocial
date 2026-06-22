@@ -22,6 +22,8 @@ defineRoutes(
     { path: "/c/:communityId/new-post", load: () => import("./views/create-post.js") },
     { path: "/c/:communityId/new-poll", load: () => import("./views/create-poll.js") },
     { path: "/poll/:pollId", load: () => import("./views/poll.js") },
+    { path: "/chat", load: () => import("./views/chat.js") },
+    { path: "/chat/:peerId", load: () => import("./views/chat.js") },
     { path: "/p/:postId", load: () => import("./views/post.js") },
     { path: "/c/:communityId", load: () => import("./views/community.js") },
   ],
