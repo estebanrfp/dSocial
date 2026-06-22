@@ -37,10 +37,15 @@ export const ROLES = {
 // Public advancement rules (the "constitution"), evaluated against user:<address>
 // nodes while a superadmin is online. Last-match-wins → climbing overrides the
 // floor and losing a condition auto-demotes.
+//
+// NOTE: these thresholds are intentionally LOW so a showcase visitor sees the
+// full guest → member → trusted climb within a minute. For a real network, raise
+// them — and prefer earned *karma* (community up-votes, which the app already
+// derives) over raw postCount, which measures volume, not trust.
 export const GOVERNANCE_RULES = [
-  { if: { role: "guest" }, offsetTimestamp: 5000, then: { assignRole: "member" } },
-  { if: { role: { $in: ["member", "trusted"] } }, then: { assignRole: "member" } },
-  { if: { role: { $in: ["member", "trusted"] }, postCount: { $gte: 3 } }, then: { assignRole: "trusted" } },
+  { if: { role: "guest" }, offsetTimestamp: 5000, then: { assignRole: "member" } }, // 5s → member (demo)
+  { if: { role: { $in: ["member", "trusted"] } }, then: { assignRole: "member" } }, // floor
+  { if: { role: { $in: ["member", "trusted"] }, postCount: { $gte: 3 } }, then: { assignRole: "trusted" } }, // 3 posts → trusted (demo)
 ];
 
 /** The ready GenosDB instance (top-level await initialises it once). */
