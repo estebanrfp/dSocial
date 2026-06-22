@@ -123,6 +123,55 @@
   transition: width 0.4s var(--t);
 }
 
+/* ── Tier-up celebration toast ────────────────────────────────────────────── */
+.toast-stack {
+  position: fixed;
+  bottom: var(--s-5);
+  right: var(--s-5);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  max-width: 320px;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(14px) scale(0.96);
+  transition: opacity 0.32s var(--t), transform 0.32s var(--t);
+}
+.toast.in {
+  opacity: 1;
+  transform: none;
+}
+.toast-badge {
+  flex: none;
+  line-height: 0;
+}
+.toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.toast-body strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+.toast-body span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .badge-sweep,
   .badge-spark-dot,

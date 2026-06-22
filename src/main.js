@@ -6,6 +6,7 @@
 // import graph can otherwise evaluate a dependent before gdb's TLA resolves).
 await import("./db/gdb.js");
 await import("./services/net.js"); // start tracking P2P peers from app start
+await import("./services/tier-watch.js"); // celebrate karma tier-ups with a toast
 
 const { mountShell } = await import("./ui/shell.js");
 const { mountOnboarding } = await import("./views/onboarding.js");
