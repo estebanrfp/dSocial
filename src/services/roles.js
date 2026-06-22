@@ -38,8 +38,9 @@ export async function getUserNode(address) {
 /** Subscribe to one identity's standing. cb(role, node) on every change. */
 export async function subscribeRole(address, onChange) {
   if (!address) return () => {};
-  const { unsubscribe } = await db.get(userNodeId(address), ({ value }) =>
-    onChange(value?.role || "guest", value || {}),
+  // db.get may invoke the callback with null (node absent/removed) — never destructure it.
+  const { unsubscribe } = await db.get(userNodeId(address), (node) =>
+    onChange(node?.value?.role || "guest", node?.value || {}),
   );
   return unsubscribe;
 }

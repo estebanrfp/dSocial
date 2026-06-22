@@ -3,6 +3,7 @@
 import { html, esc } from "../ui/base.js";
 import { navigate } from "../router/router.js";
 import { createPost } from "../services/posts.js";
+import { uploadImage } from "../services/images.js";
 
 /** @returns {Promise<HTMLElement>} */
 export default async function createPostView({ communityId }) {
@@ -20,6 +21,11 @@ export default async function createPostView({ communityId }) {
         <span>Content <em class="opt">Markdown</em></span>
         <textarea class="input" name="content" rows="8" placeholder="Write something…"></textarea>
       </label>
+      <label class="field">
+        <span>Image <em class="opt">optional</em></span>
+        <input class="input file-input" name="image" type="file" accept="image/*" />
+        <img class="img-preview" data-preview hidden alt="Preview" />
+      </label>
       <p class="form-error" data-error hidden></p>
       <div class="row"><button class="btn" type="submit">Publish</button></div>
     </form>
@@ -27,6 +33,17 @@ export default async function createPostView({ communityId }) {
 
   const form = el.querySelector("[data-form]");
   const err = el.querySelector("[data-error]");
+  const preview = el.querySelector("[data-preview]");
+  form.image.addEventListener("change", () => {
+    const file = form.image.files?.[0];
+    if (file) {
+      preview.src = URL.createObjectURL(file);
+      preview.hidden = false;
+    } else {
+      preview.hidden = true;
+    }
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     err.hidden = true;
@@ -35,10 +52,17 @@ export default async function createPostView({ communityId }) {
     const btn = form.querySelector("button");
     btn.disabled = true;
     try {
-      await createPost({ communityId, title, content: form.content.value });
+      const file = form.image.files?.[0];
+      let imageId;
+      if (file) {
+        btn.textContent = "Uploading image…";
+        imageId = await uploadImage(file);
+      }
+      await createPost({ communityId, title, content: form.content.value, imageId });
       navigate(`/c/${communityId}`);
     } catch (e2) {
       btn.disabled = false;
+      btn.textContent = "Publish";
       err.textContent = e2?.message || "Failed to publish.";
       err.hidden = false;
     }

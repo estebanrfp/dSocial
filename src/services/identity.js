@@ -58,6 +58,30 @@ export async function updateProfile(patch) {
   return next;
 }
 
+/** Aggregate public stats for a profile (all derived, never stored). */
+export async function getUserStats(userId) {
+  if (!userId) return { posts: 0, comments: 0, communities: 0, karma: 0 };
+  const [posts, comments, memberships, karma] = await Promise.all([
+    db.map({ query: { type: TYPE.post, authorId: userId } }),
+    db.map({ query: { type: TYPE.comment, authorId: userId } }),
+    db.map({ query: { type: TYPE.membership, member: userId } }),
+    getKarma(userId),
+  ]);
+  return {
+    posts: posts.results.length,
+    comments: comments.results.length,
+    communities: memberships.results.length,
+    karma,
+  };
+}
+
+/** A user's posts (newest first) for their profile page. */
+export async function getUserPosts(userId) {
+  if (!userId) return [];
+  const { results } = await db.map({ query: { type: TYPE.post, authorId: userId } });
+  return results.map((n) => n.value).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+}
+
 /**
  * Derive a user's karma: net (up − down) across every vote on their posts and
  * comments. Two-step join (votes don't carry the author): find the user's content

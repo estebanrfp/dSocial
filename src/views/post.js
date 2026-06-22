@@ -6,6 +6,7 @@ import { subscribeComments, createComment, voteOnComment } from "../services/com
 import { renderMarkdown } from "../utils/markdown.js";
 import { timeAgo } from "../utils/format.js";
 import { abbr } from "../state/session.js";
+import { getImage } from "../services/images.js";
 
 /** @returns {Promise<HTMLElement>} */
 export default async function postView({ postId }) {
@@ -29,6 +30,7 @@ export default async function postView({ postId }) {
       <div class="post-detail-body">
         <h1 class="post-title">${esc(post.title)}</h1>
         <div class="markdown">${renderMarkdown(post.content)}</div>
+        ${post.imageId ? html`<img class="post-image" data-postimg alt="Post image" />` : ""}
         <span class="meta">${esc(abbr(post.authorId))} · ${esc(timeAgo(post.createdAt))}</span>
       </div>
     </article>
@@ -40,6 +42,14 @@ export default async function postView({ postId }) {
     </form>
     <div class="comments" data-comments><p class="muted">Loading…</p></div>
   `;
+
+  if (post.imageId) {
+    getImage(post.imageId).then((data) => {
+      const img = el.querySelector("[data-postimg]");
+      if (data && img) img.src = data;
+      else img?.remove();
+    });
+  }
 
   el.querySelectorAll("[data-pvote]").forEach((b) =>
     b.addEventListener("click", async () => {

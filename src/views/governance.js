@@ -3,6 +3,7 @@
 // demo-superadmin activator that runs the engine (the only way promotions get
 // signed). All standing/roster data is reactive via the user:<address> nodes.
 import { GOVERNANCE_RULES, ROLES, SUPER_ADMINS, DEMO_SUPERADMIN_MNEMONIC } from "../db/gdb.js";
+import { navigate } from "../router/router.js";
 import { activeAddress, recoverWithMnemonic } from "../services/identity.js";
 import { subscribeRole, subscribeRoster } from "../services/roles.js";
 import { abbr } from "../state/session.js";
@@ -102,7 +103,7 @@ export default async () => {
     if (!window.confirm("Log in as the demo superadmin in THIS tab? The governance engine runs here and signs promotions. Open another tab to act as a normal user.")) return;
     try {
       await recoverWithMnemonic(DEMO_SUPERADMIN_MNEMONIC);
-      window.location.href = "/governance";
+      navigate("/governance");
     } catch (e) {
       alert(e.message);
     }

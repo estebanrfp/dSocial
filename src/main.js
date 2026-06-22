@@ -5,6 +5,7 @@
 // app — this guarantees no UI module touches `db` before it exists (a static
 // import graph can otherwise evaluate a dependent before gdb's TLA resolves).
 await import("./db/gdb.js");
+await import("./services/net.js"); // start tracking P2P peers from app start
 
 const { mountShell } = await import("./ui/shell.js");
 const { mountOnboarding } = await import("./views/onboarding.js");
@@ -26,6 +27,11 @@ defineRoutes(
     { path: "/chat/:peerId", load: () => import("./views/chat.js") },
     { path: "/rooms", load: () => import("./views/rooms.js") },
     { path: "/governance", load: () => import("./views/governance.js") },
+    { path: "/profile", load: () => import("./views/profile.js") },
+    { path: "/u/:address", load: () => import("./views/profile.js") },
+    { path: "/settings", load: () => import("./views/settings.js") },
+    { path: "/search", load: () => import("./views/search.js") },
+    { path: "/network", load: () => import("./views/network.js") },
     { path: "/p/:postId", load: () => import("./views/post.js") },
     { path: "/c/:communityId", load: () => import("./views/community.js") },
   ],
