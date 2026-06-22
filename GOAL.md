@@ -76,7 +76,7 @@ operación firmada y verificada por el Security Manager).
    autónomo; el usuario puede interrumpir si quiere ajustar algo).
 2. Construye incremental por fases: núcleo (gdb+SM+identidad+router+shell+design
    system) → comunidades+posts → encuestas+votos → comentarios+karma → chat →
-   governance+moderación → búsqueda+perfiles+settings → pulido.
+   governance+moderación → búsqueda+perfiles+settings → pulido → despliegue.
 3. Commit por fase (mensajes convencionales, **sin Co-Authored-By Claude**).
 4. Respeta las reglas globales (ES2022+, async/await, factory functions sobre
    clases, código compacto y legible, JSDoc en funciones públicas).
@@ -97,6 +97,19 @@ Verifica además, abriendo **dos (o más) navegadores con identidades distintas*
 El trabajo termina **solo** cuando has comprobado, en el navegador, que **todo**
 funciona — incluidos el **P2P multi-navegador** y el **zero-trust**.
 
+## Despliegue (fase FINAL, Netlify)
+Solo cuando **todo** esté construido y verificado. Prepara:
+- `netlify.toml`: `command = "bun run build"`, `publish = "dist"`, y un redirect
+  SPA `/* → /index.html 200`.
+- Asegura que `bun run build` deja GenosDB en `dist/genosdb` (el script
+  `copy-genosdb.js dist` ya lo hace) y que los assets sirven desde la raíz.
+- Comprueba un build de producción local antes de publicar.
+
+La **publicación** (crear/enlazar el sitio en Netlify y el go-live) la aprueba/hace
+Esteban — preferentemente repo-linked (auto-deploy en `push`), como el fork. Deja
+todo listo para publicar, pero **no publiques de forma autónoma**.
+
 ## No hagas
 Usar ningún framework/librería de UI; TypeScript; bundlear GenosDB; tocar el fork
-o el repo GenosDB; añadir trailer de IA a los commits.
+o el repo GenosDB; añadir trailer de IA a los commits; **publicar/desplegar de
+forma autónoma** sin la aprobación de Esteban.
