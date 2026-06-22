@@ -34,6 +34,7 @@ function base(value) {
     content: value.content || "",
     imageId: value.imageId,
     createdAt: value.createdAt ?? 0,
+    editedAt: value.editedAt,
   };
 }
 async function build(value) {
@@ -53,6 +54,18 @@ export async function createPost({ communityId, title, content, imageId }) {
   await grantCommunityModerators(id, communityId);
   syncPostCount(me).catch(() => {}); // re-derive postCount for the member→trusted rule
   return { ...base(record), upvotes: 0, downvotes: 0, score: 0, commentCount: 0 };
+}
+
+/** Edit a post's title/content/image (owner only — enforced by ACLs). Spreads the
+ *  existing node so votes/comments/ownership are untouched. */
+export async function editPost(postId, { title, content, imageId }) {
+  const { result } = await db.get(postId);
+  const v = result?.value;
+  if (v?.type !== TYPE.post) throw new Error("Post not found");
+  const next = { ...v, title: title ?? v.title, content: content ?? "", editedAt: Date.now() };
+  if (imageId !== undefined) next.imageId = imageId;
+  await db.sm.acls.set(next, postId);
+  return base(next);
 }
 
 /** Read one post with derived score + comment count, or null. */

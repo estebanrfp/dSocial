@@ -37,8 +37,15 @@ export default async function postView({ postId }) {
         <div class="markdown">${renderMarkdown(post.content)}</div>
         ${post.imageId ? html`<img class="post-image" data-postimg alt="Post image" />` : ""}
         <div class="post-meta-row">
-          <span class="meta">${esc(abbr(post.authorId))} · ${esc(timeAgo(post.createdAt))}</span>
-          ${mine ? html`<button class="btn btn-ghost btn-sm" data-del-post>Delete</button>` : ""}
+          <span class="meta">${esc(abbr(post.authorId))} · ${esc(timeAgo(post.createdAt))}${post.editedAt ? " · edited" : ""}</span>
+          ${
+            mine
+              ? html`<div class="post-actions">
+                  <a class="btn btn-ghost btn-sm" href="/p/${esc(postId)}/edit">Edit</a>
+                  <button class="btn btn-ghost btn-sm" data-del-post>Delete</button>
+                </div>`
+              : ""
+          }
         </div>
       </div>
     </article>

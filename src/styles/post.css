@@ -7,6 +7,11 @@
   gap: var(--s-3);
   margin-top: var(--s-2);
 }
+.post-actions {
+  display: flex;
+  gap: var(--s-2);
+  flex-shrink: 0;
+}
 
 /* Markdown Write/Preview toggle (create-post) */
 .field-head {

@@ -32,6 +32,7 @@ defineRoutes(
     { path: "/settings", load: () => import("./views/settings.js") },
     { path: "/search", load: () => import("./views/search.js") },
     { path: "/network", load: () => import("./views/network.js") },
+    { path: "/p/:postId/edit", load: () => import("./views/edit-post.js") },
     { path: "/p/:postId", load: () => import("./views/post.js") },
     { path: "/c/:communityId", load: () => import("./views/community.js") },
   ],
