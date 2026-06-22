@@ -28,6 +28,13 @@ El fork Vue+Ionic en `/Users/estebanrfp/Projects/Deployments/interpoll-genosdb`.
 Reproduce **todas** sus secciones. Reutiliza la lógica de sus servicios
 (`src/services/*`: poll, community, user, chat, moderationGrants…) portándola a `.js` vanilla.
 
+## Inicialización de GenosDB (config del fork)
+El scaffold arranca con `gdb(name, { rtc: true })` mínimo. Para paridad, porta la
+config de `interpoll-genosdb/src/services/gdbServices.ts`: Security Manager con
+`customRoles` (roles guest→member→trusted + superadmin), `governanceRules`
+(ascenso de rol por reglas públicas), `acls: true`, `rtc: true`, y la lista
+`SUPER_ADMINS`. Usa un `GDB_NAME` propio para la sala de la edición vanilla.
+
 ## Stack y arquitectura (obligatorio)
 - Bun para build/run/scripts. GenosDB servido intacto desde `/genosdb`, **nunca bundleado**.
 - **Sin frameworks.** UI con **Web Components nativos**; reactividad suscrita a
@@ -50,8 +57,14 @@ guest→member→trusted + superadmin con reglas públicas); moderación (ACL de
 borrado por owner+mods); búsqueda (`$text` a nivel de campo); perfiles; imágenes
 (nodos GenosDB base64); settings; página de red.
 
+**Seguridad (como el fork):** markdown de posts sanitizado (anti-XSS); cifrado
+E2E en chat y en comunidades privadas/cifradas; identidad zero-trust (toda
+operación firmada y verificada por el Security Manager).
+
 ## Cómo trabajar
-1. **Primero propón la arquitectura y un plan por fases** y espera mi OK.
+1. **Primero propón la arquitectura y el plan por fases** (en un único mensaje) y
+   luego **procede sin detenerte a esperar confirmación** (pensado para `/goal`
+   autónomo; el usuario puede interrumpir si quiere ajustar algo).
 2. Construye incremental por fases: núcleo (gdb+SM+identidad+router+shell+design
    system) → comunidades+posts → encuestas+votos → comentarios+karma → chat →
    governance+moderación → búsqueda+perfiles+settings → pulido.
