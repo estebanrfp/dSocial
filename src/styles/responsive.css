@@ -1,0 +1,83 @@
+/* Responsive — mobile adjustments layered on top of the desktop styles. Loaded
+   last so its media queries win. Single place for every breakpoint override. */
+
+@media (max-width: 640px) {
+  /* Canvas: tighter gutters */
+  .shell {
+    padding: var(--s-5) var(--s-4);
+  }
+
+  /* Top bar: compact so brand + nav + identity all fit one row */
+  .topbar {
+    padding: var(--s-3) var(--s-4);
+    gap: var(--s-2);
+  }
+  .nav {
+    margin-left: var(--s-1);
+    gap: 0;
+    flex: none; /* don't stretch — flex:1 was widening the nav and pushing actions off-screen */
+  }
+  .nav-link {
+    padding: var(--s-2) 6px;
+    font-size: 12px;
+  }
+  .topbar-right {
+    gap: var(--s-1);
+    margin-left: auto; /* keep actions hard-right without a stretching nav */
+  }
+  /* Keep the top-bar actions on a single line each */
+  .topbar-right .btn,
+  .topbar .role-chip {
+    white-space: nowrap;
+  }
+  .topbar-right .btn {
+    padding: 6px 10px;
+  }
+  /* The address pill is informational; the role chip + Log out are the actions */
+  .id-pill {
+    display: none;
+  }
+
+  /* Page + detail headers stack vertically; actions go full width below */
+  .page-head,
+  .detail-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-3);
+  }
+  .detail-actions {
+    display: flex;
+    gap: var(--s-2);
+  }
+  .detail-actions .btn {
+    flex: 1;
+    white-space: nowrap;
+  }
+  .page-head .btn {
+    align-self: flex-start;
+  }
+
+  /* Chat: drop the sidebar's right divider when it spans full width */
+  .chat-sidebar {
+    border-right: none;
+  }
+
+  /* Profile: avatar + actions wrap cleanly */
+  .profile-head {
+    flex-wrap: wrap;
+  }
+  .profile-actions {
+    flex-direction: row;
+  }
+}
+
+/* Very narrow phones: shrink the brand a touch more */
+@media (max-width: 380px) {
+  .brand {
+    font-size: 16px;
+  }
+  .nav-link {
+    font-size: 12px;
+    padding: var(--s-1) 6px;
+  }
+}
