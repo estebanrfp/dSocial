@@ -206,3 +206,42 @@ textarea.input {
   font-size: 11px;
   font-family: var(--mono);
 }
+
+/* Recovery-phrase header + minimal icon-only copy button (onboarding + settings). */
+.mnemonic-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+.mnemonic-head h2 {
+  margin: 0;
+}
+.reveal-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.copy-btn {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.copy-btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+.copy-btn.copied {
+  color: var(--ok);
+  border-color: var(--ok);
+}

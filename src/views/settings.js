@@ -4,6 +4,7 @@ import { html, esc } from "../ui/base.js";
 import { navigate } from "../router/router.js";
 import { activeAddress, protectWithWebAuthn, logout } from "../services/identity.js";
 import { smState, mnemonic } from "../state/session.js";
+import { copyButton, wireCopy } from "../ui/copy.js";
 
 export default async () => {
   const el = document.createElement("main");
@@ -41,7 +42,10 @@ export default async () => {
           ? html`<section class="settings-card">
               <h2>Recovery phrase</h2>
               <p class="muted small">These 12 words are the <strong>only</strong> way to recover this identity. Store them offline — they are never sent anywhere.</p>
-              <button class="btn btn-ghost btn-sm" data-reveal>Reveal phrase</button>
+              <div class="reveal-row">
+                <button class="btn btn-ghost btn-sm" data-reveal>Reveal phrase</button>
+                ${copyButton("Copy phrase")}
+              </div>
               <pre class="mnemonic-box" data-phrase hidden>${esc(phrase)}</pre>
             </section>`
           : html`<section class="settings-card">
@@ -82,6 +86,7 @@ export default async () => {
       logout();
       navigate("/");
     });
+    wireCopy(el, mnemonic);
   };
 
   render();

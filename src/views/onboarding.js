@@ -11,6 +11,7 @@ import {
   ensureProfile,
 } from "../services/identity.js";
 import { esc } from "../ui/base.js";
+import { copyButton, wireCopy } from "../ui/copy.js";
 
 /** Mount the onboarding overlay into `root`; it shows/hides with the identity signal. */
 export function mountOnboarding(root) {
@@ -33,7 +34,10 @@ export function mountOnboarding(root) {
     if (view === "mnemonic") {
       const words = (mnemonic() || "").split(/\s+/).filter(Boolean);
       overlay.innerHTML = card(`
-        <h2>Save your recovery phrase</h2>
+        <div class="mnemonic-head">
+          <h2>Save your recovery phrase</h2>
+          ${copyButton("Copy phrase")}
+        </div>
         <p class="muted">These 12 words ARE your account. Store them safely — they are
           shown once and never saved anywhere.</p>
         <ol class="mnemonic">${words.map((w) => `<li>${esc(w)}</li>`).join("")}</ol>
@@ -119,6 +123,7 @@ export function mountOnboarding(root) {
         }
       });
     });
+    wireCopy(overlay, mnemonic);
   };
 
   identity.subscribe(render);
