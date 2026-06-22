@@ -46,10 +46,16 @@ async function renderRoute() {
     const query = Object.fromEntries(new URLSearchParams(location.search));
     const mod = await r.load();
     const node = await mod.default({ ...params, query });
-    if (node) outlet.replaceChildren(node);
+    if (node) mount(node);
     return;
   }
-  if (notFound) outlet.replaceChildren(await notFound());
+  if (notFound) mount(await notFound());
+}
+
+/** Swap the outlet's content, cleaning up the outgoing view's subscriptions. */
+function mount(node) {
+  outlet.firstElementChild?._cleanup?.();
+  outlet.replaceChildren(node);
 }
 
 window.addEventListener("popstate", renderRoute);

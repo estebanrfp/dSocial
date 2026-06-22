@@ -18,6 +18,9 @@ defineRoutes(
   [
     { path: "/", load: () => import("./views/home.js") },
     { path: "/home", load: () => import("./views/home.js") },
+    { path: "/create-community", load: () => import("./views/create-community.js") },
+    { path: "/c/:communityId/new-post", load: () => import("./views/create-post.js") },
+    { path: "/c/:communityId", load: () => import("./views/community.js") },
   ],
   {
     notFound: async () => {
