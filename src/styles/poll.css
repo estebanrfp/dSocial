@@ -1,0 +1,139 @@
+/* Polls: feed cards, voting choices and results. */
+
+.kind-tag {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+}
+.poll-card {
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.poll-detail {
+  padding: var(--s-6);
+}
+.poll-q {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--s-2);
+}
+.poll-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: var(--s-5) 0;
+}
+.poll-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Voting choices */
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  text-align: left;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color var(--t), background var(--t);
+}
+.choice:hover {
+  border-color: var(--border-strong);
+}
+.choice.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.choice-mark {
+  color: var(--accent);
+  font-size: 13px;
+}
+
+/* Results */
+.result {
+  position: relative;
+  padding: 12px 15px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.result.mine {
+  border-color: var(--accent);
+}
+.result-bar {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-soft);
+  z-index: 0;
+  transition: width var(--t);
+}
+.result-label {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Create-poll form bits */
+.option-row {
+  display: flex;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+}
+.option-row .input {
+  flex: 1;
+}
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: var(--r-sm);
+  width: 38px;
+  cursor: pointer;
+  flex: none;
+}
+.icon-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.field-row {
+  display: flex;
+  gap: var(--s-4);
+  align-items: flex-end;
+}
+.field-row .field {
+  flex: 1;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 14px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}

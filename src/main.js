@@ -20,6 +20,8 @@ defineRoutes(
     { path: "/home", load: () => import("./views/home.js") },
     { path: "/create-community", load: () => import("./views/create-community.js") },
     { path: "/c/:communityId/new-post", load: () => import("./views/create-post.js") },
+    { path: "/c/:communityId/new-poll", load: () => import("./views/create-poll.js") },
+    { path: "/poll/:pollId", load: () => import("./views/poll.js") },
     { path: "/c/:communityId", load: () => import("./views/community.js") },
   ],
   {
