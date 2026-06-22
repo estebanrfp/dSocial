@@ -61,3 +61,9 @@ export const db = await gdb(GDB_NAME, {
 
 // Console handle for debugging (matches the GenosDB examples).
 globalThis.db = db;
+
+// Tear down the P2P connections when the page is hidden or unloaded. Without this,
+// rapid reloads pile up RTCPeerConnections (the new page inits before the browser
+// frees the old ones) and eventually hit Chromium's per-process cap — "Cannot
+// create so many PeerConnections", which would block the app from starting.
+addEventListener("pagehide", () => db.room?.leave?.());
