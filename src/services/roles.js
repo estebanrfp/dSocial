@@ -5,6 +5,7 @@
 // into that same node so the member→trusted rule can read them. db.put REPLACES
 // the node, so every metric write spreads the existing value to preserve `role`.
 import { db } from "../db/gdb.js";
+import { TYPE } from "../db/schema.js";
 import { activeAddress } from "./identity.js";
 
 const userNodeId = (addr) => `user:${addr}`;
@@ -65,11 +66,20 @@ export async function subscribeRoster(onChange) {
   return unsubscribe;
 }
 
-/** Count an action toward the member→trusted rule (postCount, role preserved). */
-export async function recordPost(address = activeAddress()) {
+/**
+ * Re-derive postCount from the identity's live posts and write it to the
+ * governance node, so the member↔trusted rule tracks reality: it climbs when you
+ * publish and demotes when you delete (resolved by last-match-wins in db/gdb.js).
+ * Deriving from the real count — not an incrementing counter — keeps it correct
+ * across deletes, failures and re-syncs (role preserved via spread).
+ */
+export async function syncPostCount(address = activeAddress()) {
   if (!address) return;
   const id = userNodeId(address);
-  const { result } = await db.get(id);
+  const [{ result }, posts] = await Promise.all([
+    db.get(id),
+    db.map({ query: { type: TYPE.post, authorId: address } }),
+  ]);
   const v = result?.value ?? {};
-  await db.put({ role: "guest", ...v, postCount: (v.postCount ?? 0) + 1 }, id);
+  await db.put({ role: "guest", ...v, postCount: posts.results.length }, id);
 }
