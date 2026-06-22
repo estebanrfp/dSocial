@@ -10,15 +10,35 @@ import { activeAddress } from "./identity.js";
 
 const userNodeId = (addr) => `user:${addr}`;
 
-/** Ensure the active identity's governance node carries role + postCount. */
+/**
+ * Read the governance node, retrying briefly. On a reload the node may not have
+ * loaded from OPFS / synced from peers yet; without this wait a not-yet-loaded
+ * node looks brand-new and we'd overwrite a real role with `guest`.
+ */
+async function loadUserNode(id, tries = 4) {
+  for (let i = 0; i < tries; i++) {
+    const { result } = await db.get(id);
+    if (result?.value) return result.value;
+    if (i < tries - 1) await new Promise((r) => setTimeout(r, 400));
+  }
+  return null;
+}
+
+/**
+ * Ensure the active identity's governance node exists. Runs on every login/reload,
+ * so it must NEVER overwrite `role`: the SM/governance owns it. Only a genuinely
+ * new identity (still absent after the sync wait) gets the one-time welcome write —
+ * this is what stops a reload from clobbering a member/trusted role with `guest`.
+ */
 export async function ensureUserDoc(address = activeAddress()) {
   if (!address) return null;
   const id = userNodeId(address);
-  const { result } = await db.get(id);
-  const v = result?.value;
-  if (!v || v.role == null || v.postCount == null) {
-    await db.put({ role: "guest", ...v, postCount: v?.postCount ?? 0 }, id);
+  const v = await loadUserNode(id);
+  if (v) {
+    if (v.postCount == null) await db.put({ ...v, postCount: 0 }, id);
+    return id;
   }
+  await db.put({ role: "guest", postCount: 0, ethAddress: address }, id);
   return id;
 }
 
@@ -76,10 +96,9 @@ export async function subscribeRoster(onChange) {
 export async function syncPostCount(address = activeAddress()) {
   if (!address) return;
   const id = userNodeId(address);
-  const [{ result }, posts] = await Promise.all([
-    db.get(id),
-    db.map({ query: { type: TYPE.post, authorId: address } }),
-  ]);
-  const v = result?.value ?? {};
-  await db.put({ role: "guest", ...v, postCount: posts.results.length }, id);
+  const v = await loadUserNode(id); // waits, so we don't clobber a not-yet-synced role
+  const { results } = await db.map({ query: { type: TYPE.post, authorId: address } });
+  // Preserve an existing role/assignedBy/expiresAt; only seed `guest` for a truly
+  // new node. Never write `role: guest` over a role that already exists.
+  await db.put({ ...(v ?? { role: "guest", ethAddress: address }), postCount: results.length }, id);
 }
