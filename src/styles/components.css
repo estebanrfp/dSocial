@@ -1,0 +1,208 @@
+/* Component classes over the design tokens — class-based, framework-free. */
+
+/* ── App layout ─────────────────────────────────────────────── */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.outlet {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top nav ─────────────────────────────────────────────────── */
+.topbar .brand {
+  text-decoration: none;
+}
+.nav {
+  display: flex;
+  gap: var(--s-1);
+  flex: 1;
+  margin-left: var(--s-4);
+}
+.nav-link {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 14px;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-sm);
+}
+.nav-link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  text-decoration: none;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.id-pill {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 5px 10px;
+  border-radius: var(--r-full);
+}
+.id-pill:hover {
+  text-decoration: none;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  font: inherit;
+  font-weight: 650;
+  font-size: 14px;
+  line-height: 1;
+  padding: 11px 18px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  cursor: pointer;
+  transition: background var(--t), border-color var(--t), opacity var(--t);
+}
+.btn:hover {
+  background: var(--accent-strong);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.btn-ghost:hover {
+  background: var(--surface-2);
+}
+.btn-link {
+  background: transparent;
+  color: var(--accent);
+  padding: var(--s-2);
+  margin-top: var(--s-3);
+}
+.btn-link:hover {
+  text-decoration: underline;
+}
+.btn-sm {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+.btn-danger {
+  background: var(--danger);
+  color: #2a0a0f;
+}
+
+.row {
+  display: flex;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-top: var(--s-5);
+}
+
+/* ── Inputs ──────────────────────────────────────────────────── */
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+textarea.input {
+  resize: vertical;
+  line-height: 1.5;
+}
+.form-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin: var(--s-2) 0 0;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+  box-shadow: var(--shadow);
+}
+
+/* ── Onboarding overlay ──────────────────────────────────────── */
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-5);
+  background:
+    radial-gradient(900px 500px at 50% 0%, #0e1217 0%, transparent 60%),
+    rgba(5, 6, 8, 0.86);
+  backdrop-filter: blur(8px);
+}
+.onboarding[hidden] {
+  display: none;
+}
+.onboarding-card {
+  width: 100%;
+  max-width: 440px;
+}
+.onboarding-card h2 {
+  margin: 0 0 var(--s-2);
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+.onboarding-card .muted {
+  font-size: 14px;
+  line-height: 1.55;
+}
+.brand-lg {
+  font-size: 22px;
+  margin-bottom: var(--s-4);
+}
+
+.mnemonic {
+  list-style: none;
+  counter-reset: w;
+  padding: 0;
+  margin: var(--s-4) 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+}
+.mnemonic li {
+  counter-increment: w;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.mnemonic li::before {
+  content: counter(w);
+  color: var(--muted);
+  font-size: 11px;
+  font-family: var(--mono);
+}
