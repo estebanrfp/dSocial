@@ -25,6 +25,82 @@
   font-weight: 800;
   margin: 0;
 }
+/* Sub-tabs: Direct | Rooms */
+.chat-tabs {
+  display: flex;
+  gap: var(--s-1, 4px);
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.chat-tab {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+.chat-tab:hover {
+  color: var(--text);
+}
+.chat-tab.active {
+  background: var(--surface-2);
+  color: var(--accent);
+}
+
+.room-actions {
+  display: flex;
+  gap: var(--s-2);
+}
+.room-actions .btn {
+  flex: 1;
+}
+.room-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  background: var(--surface);
+}
+.room-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.room-form .input {
+  font-size: 13px;
+}
+.row.gap {
+  display: flex;
+  gap: var(--s-2);
+}
+.room-count {
+  color: var(--muted);
+  font-size: 11px;
+  font-family: var(--font);
+}
+.room-sub {
+  font-size: 12px;
+  font-weight: 400;
+}
+.thread-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.msg-sender {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 2px;
+  font-family: var(--mono, monospace);
+}
+
 .dm-start {
   display: flex;
   gap: var(--s-2);

@@ -21,7 +21,10 @@ export default async (params) => {
   el.innerHTML = `
     <div class="chat-layout">
       <aside class="chat-sidebar">
-        <h1 class="page-title">Messages</h1>
+        <nav class="chat-tabs">
+          <a class="chat-tab active" href="/chat">Direct</a>
+          <a class="chat-tab" href="/rooms">Rooms</a>
+        </nav>
         <form class="dm-start" data-start>
           <input class="input" name="peer" placeholder="Recipient address (0x…)" autocomplete="off" spellcheck="false" />
           <button class="btn btn-primary btn-sm" type="submit">Start</button>
