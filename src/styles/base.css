@@ -13,7 +13,7 @@ body {
 
 body {
   background:
-    radial-gradient(1200px 620px at 50% -12%, #0f1319 0%, transparent 60%),
+    radial-gradient(1200px 620px at 50% -12%, var(--glow) 0%, transparent 60%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text);

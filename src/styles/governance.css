@@ -52,20 +52,20 @@
   padding: 5px 14px;
 }
 .role-guest {
-  background: rgba(250, 204, 21, 0.14);
-  color: #facc15;
+  background: var(--role-guest-soft);
+  color: var(--role-guest);
 }
 .role-member {
-  background: rgba(74, 222, 128, 0.14);
-  color: #4ade80;
+  background: var(--role-member-soft);
+  color: var(--role-member);
 }
 .role-trusted {
-  background: var(--accent-soft, rgba(45, 212, 191, 0.14));
-  color: var(--accent);
+  background: var(--role-trusted-soft);
+  color: var(--role-trusted);
 }
 .role-superadmin {
-  background: rgba(167, 139, 250, 0.16);
-  color: #a78bfa;
+  background: var(--role-super-soft);
+  color: var(--role-super);
 }
 
 /* Standing */
@@ -91,6 +91,7 @@
 }
 .progress .bar {
   height: 100%;
+  width: var(--pct, 0%);
   background: var(--accent);
   border-radius: 999px;
   transition: width 0.3s;
@@ -168,7 +169,7 @@
 
 /* Demo */
 .gov-demo {
-  border-color: var(--accent-soft, rgba(45, 212, 191, 0.3));
+  border-color: var(--border-strong);
 }
 
 /* Topbar role chip */

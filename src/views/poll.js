@@ -93,7 +93,7 @@ function resultRow(o, poll, mine, max) {
   const isMine = mine.includes(o.id);
   return html`
     <div class="result ${isMine ? "mine" : ""}">
-      <div class="result-bar" style="width:${(o.votes / max) * 100}%"></div>
+      <div class="result-bar" style="--pct:${(o.votes / max) * 100}%"></div>
       <div class="result-label"><span>${esc(o.text)}${isMine ? " ✓" : ""}</span><span>${pct}% · ${o.votes}</span></div>
     </div>`;
 }

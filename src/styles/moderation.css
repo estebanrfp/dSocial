@@ -65,6 +65,6 @@
   color: var(--muted);
 }
 .icon-btn:hover {
-  color: var(--danger, #f87171);
-  border-color: var(--danger, #f87171);
+  color: var(--danger);
+  border-color: var(--danger);
 }

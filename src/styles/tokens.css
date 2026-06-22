@@ -21,14 +21,35 @@
   /* Accent + status */
   --accent: #2dd4bf;
   --accent-strong: #14b8a6;
+  --accent-light: #6ee7d8;
   --accent-contrast: #04211d;
+  --accent-ink: #04211d; /* text on a solid accent fill */
   --accent-soft: rgba(45, 212, 191, 0.13);
   --accent-rgb: 45, 212, 191;
   --danger: #fb7185;
+  --danger-ink: #2a0a0f; /* text on a solid danger fill */
   --danger-soft: rgba(251, 113, 133, 0.13);
   --warn: #fbbf24;
-  --ok: #34d399;
-  --ok-rgb: 52, 211, 153;
+  --warn-soft: rgba(251, 191, 36, 0.14);
+  --ok: #4ade80;
+  --ok-rgb: 74, 222, 128;
+  --ok-soft: rgba(74, 222, 128, 0.14);
+  --violet: #a78bfa;
+  --violet-soft: rgba(167, 139, 250, 0.16);
+
+  /* Role identity → status colors (single source for every role chip) */
+  --role-guest: var(--warn);
+  --role-guest-soft: var(--warn-soft);
+  --role-member: var(--ok);
+  --role-member-soft: var(--ok-soft);
+  --role-trusted: var(--accent);
+  --role-trusted-soft: var(--accent-soft);
+  --role-super: var(--violet);
+  --role-super-soft: var(--violet-soft);
+
+  /* Canvas glow (radial highlights behind the dark canvas) */
+  --glow: #0f1319;
+  --scrim: rgba(5, 6, 8, 0.86); /* modal / overlay veil */
 
   /* Typography */
   --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;

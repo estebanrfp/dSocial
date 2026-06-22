@@ -44,7 +44,7 @@
   color: var(--text);
 }
 .md-tab.is-active {
-  background: var(--accent-soft, rgba(45, 212, 191, 0.12));
+  background: var(--accent-soft);
   color: var(--accent);
 }
 .md-preview {

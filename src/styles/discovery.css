@@ -128,8 +128,8 @@
   display: inline-block;
 }
 .net-dot.on {
-  background: #4ade80;
-  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+  background: var(--ok);
+  box-shadow: 0 0 0 3px rgba(var(--ok-rgb), 0.18);
 }
 .net-dot.off {
   background: var(--muted);

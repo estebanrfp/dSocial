@@ -99,7 +99,7 @@
 }
 .btn-danger {
   background: var(--danger);
-  color: #2a0a0f;
+  color: var(--danger-ink);
 }
 
 .row {
@@ -154,8 +154,8 @@ textarea.input {
   justify-content: center;
   padding: var(--s-5);
   background:
-    radial-gradient(900px 500px at 50% 0%, #0e1217 0%, transparent 60%),
-    rgba(5, 6, 8, 0.86);
+    radial-gradient(900px 500px at 50% 0%, var(--glow) 0%, transparent 60%),
+    var(--scrim);
   backdrop-filter: blur(8px);
 }
 .onboarding[hidden] {

@@ -78,7 +78,7 @@ export default async () => {
     const postCount = node?.postCount ?? 0;
     const progress =
       !isSuper && role === "member"
-        ? `<div class="progress"><div class="bar" style="width:${Math.min(100, (postCount / 3) * 100)}%"></div></div>
+        ? `<div class="progress"><div class="bar" style="--pct:${Math.min(100, (postCount / 3) * 100)}%"></div></div>
            <span class="small muted">${postCount}/3 posts toward <strong>trusted</strong></span>`
         : "";
     const note = isSuper
