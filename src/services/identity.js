@@ -2,7 +2,7 @@
 // signs every operation and drives RBAC; this module wraps its onboarding/login
 // calls and the per-identity `user` profile node (ACL-owned by the address).
 import { db } from "../db/gdb.js";
-import { TYPE } from "../db/schema.js";
+import { TYPE, isAuthenticVote } from "../db/schema.js";
 
 // ── Onboarding / session ─────────────────────────────────────────────────────
 
@@ -103,7 +103,13 @@ export async function getKarma(userId) {
 
   let karma = 0;
   for (const { results } of await Promise.all(queries)) {
-    for (const n of results) karma += n.value.direction === "up" ? 1 : -1;
+    // Only authentic votes (verified signer === voter) move karma — unforgeable —
+    // and reputation must come from OTHERS, so self-votes don't count.
+    for (const n of results) {
+      if (!isAuthenticVote(n.value)) continue;
+      if (n.value.voter === userId) continue;
+      karma += n.value.direction === "up" ? 1 : -1;
+    }
   }
   return karma;
 }

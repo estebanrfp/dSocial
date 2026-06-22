@@ -2,7 +2,7 @@
 // vote is a deterministic, ACL-owned node so scores derive from signed votes (no
 // mutable counter to corrupt). Ported from the fork's PostService.
 import { db } from "../db/gdb.js";
-import { TYPE, newId, postVoteId } from "../db/schema.js";
+import { TYPE, newId, postVoteId, isAuthenticVote } from "../db/schema.js";
 import { activeAddress } from "./identity.js";
 import { grantCommunityModerators } from "./moderation.js";
 import { syncPostCount } from "./roles.js";
@@ -18,7 +18,10 @@ function tally(votes) {
 
 async function loadVotes(postId) {
   const { results } = await db.map({ query: { type: TYPE.postVote, postId } });
-  return results.map((n) => ({ voter: n.value.voter, direction: n.value.direction }));
+  // Count only votes whose verified signer matches the voter (no forged voters).
+  return results
+    .filter((n) => isAuthenticVote(n.value))
+    .map((n) => ({ voter: n.value.voter, direction: n.value.direction }));
 }
 async function countComments(postId) {
   const { results } = await db.map({ query: { type: TYPE.comment, postId } });

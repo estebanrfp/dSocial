@@ -3,7 +3,7 @@
 // signed votes (one vote per identity, re-voting overwrites). Private polls gate
 // voting behind single-use invite codes. Ported from the fork's PollService.
 import { db } from "../db/gdb.js";
-import { TYPE, newId, voteId } from "../db/schema.js";
+import { TYPE, newId, voteId, isAuthenticVote } from "../db/schema.js";
 import { activeAddress } from "./identity.js";
 import { grantCommunityModerators } from "./moderation.js";
 
@@ -17,7 +17,7 @@ async function buildPoll(pollId, record) {
   const votersByOption = new Map();
   for (const node of results) {
     const v = node.value;
-    if (!v?.voter || !Array.isArray(v.optionIds)) continue;
+    if (!isAuthenticVote(v) || !Array.isArray(v.optionIds)) continue; // signer must match voter
     for (const optId of v.optionIds) {
       const arr = votersByOption.get(optId) ?? [];
       if (!arr.includes(v.voter)) arr.push(v.voter);

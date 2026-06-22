@@ -2,7 +2,7 @@
 // parentId?}); each vote is its own signed node, so scores derive from votes.
 // Ported from the fork's CommentService.
 import { db } from "../db/gdb.js";
-import { TYPE, newId, commentVoteId } from "../db/schema.js";
+import { TYPE, newId, commentVoteId, isAuthenticVote } from "../db/schema.js";
 import { activeAddress } from "./identity.js";
 import { grantCommunityModerators } from "./moderation.js";
 
@@ -10,6 +10,7 @@ async function tally(commentId) {
   const { results } = await db.map({ query: { type: TYPE.commentVote, commentId } });
   let up = 0, down = 0;
   for (const n of results) {
+    if (!isAuthenticVote(n.value)) continue; // ignore votes not signed by the voter
     if (n.value.direction === "up") up++;
     else if (n.value.direction === "down") down++;
   }

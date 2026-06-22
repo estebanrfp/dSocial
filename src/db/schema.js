@@ -40,3 +40,12 @@ export const voteId = (pollId, voter) => `${pollId}:${voter}`;
 export const postVoteId = (postId, voter) => `postVote:${postId}:${voter}`;
 export const commentVoteId = (commentId, voter) => `commentVote:${commentId}:${voter}`;
 export const roomMemberId = (roomId, addr) => `roomMember:${roomId}:${addr}`;
+
+/**
+ * A vote counts toward a tally only when its cryptographically-verified signer
+ * (`owner`, set by the Security Manager and propagated to every peer) matches the
+ * `voter` it claims to be. Without this, anyone could inflate a score or their own
+ * karma by signing votes under fake voter ids. The check makes every tally
+ * trustless and independently auditable by any peer.
+ */
+export const isAuthenticVote = (v) => !!v && v.owner != null && v.owner === v.voter;
