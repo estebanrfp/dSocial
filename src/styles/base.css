@@ -1,4 +1,4 @@
-/* Reset + app shell. Component styles live next to their components. */
+/* Reset + app scaffold + typography. Component styles live in components.css. */
 *,
 *::before,
 *::after {
@@ -13,7 +13,8 @@ body {
 
 body {
   background:
-    radial-gradient(ellipse at top, var(--bg-elevated) 0%, var(--bg) 60%);
+    radial-gradient(1200px 620px at 50% -12%, #0f1319 0%, transparent 60%),
+    var(--bg);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font);
@@ -28,8 +29,11 @@ body {
 }
 
 a {
-  color: var(--brand);
+  color: var(--accent);
   text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }
 
 code {
@@ -40,48 +44,78 @@ code {
   border-radius: 6px;
 }
 
-/* ── App shell ─────────────────────────────────────────────── */
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  backdrop-filter: blur(8px);
+.muted {
+  color: var(--muted);
 }
 
-.topbar h1 {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+/* ── Page scaffold ─────────────────────────────────────────── */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: 18px;
+  background: linear-gradient(90deg, var(--text), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .shell {
-  max-width: 1100px;
+  width: 100%;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: var(--s-6) var(--s-5);
+  flex: 1;
 }
 
-/* ── Card ──────────────────────────────────────────────────── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-top-color: var(--border-top);
-  border-radius: var(--radius);
-  padding: 20px;
-  box-shadow: var(--shadow);
+/* ── Hero (landing) ─────────────────────────────────────────── */
+.hero {
+  max-width: 660px;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 5.2vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+  margin: 0 0 var(--s-3);
+}
+.hero h1 .accent {
+  color: var(--accent);
+}
+.hero .lede {
+  font-size: 17px;
+  color: var(--text-dim);
+  margin: 0;
 }
 
 .status {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
-  margin: 0 0 8px;
+  gap: var(--s-2);
+  margin-top: var(--s-6);
   font-weight: 600;
+  font-size: 14px;
 }
-
 .dot {
   width: 9px;
   height: 9px;
@@ -89,13 +123,13 @@ code {
   background: var(--muted);
   flex: none;
 }
-
 .dot.ok {
   background: var(--ok);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 18%, transparent);
+  box-shadow: 0 0 0 4px rgba(var(--ok-rgb), 0.16);
 }
 
-.muted {
-  color: var(--muted);
-  margin: 4px 0 0;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }
