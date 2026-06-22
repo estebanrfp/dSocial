@@ -57,3 +57,29 @@ export async function updateProfile(patch) {
   await db.sm.acls.set(next, address);
   return next;
 }
+
+/**
+ * Derive a user's karma: net (up − down) across every vote on their posts and
+ * comments. Two-step join (votes don't carry the author): find the user's content
+ * ids, then aggregate the votes referencing them. Never written onto a node.
+ */
+export async function getKarma(userId) {
+  if (!userId) return 0;
+  const [posts, comments] = await Promise.all([
+    db.map({ query: { type: TYPE.post, authorId: userId } }),
+    db.map({ query: { type: TYPE.comment, authorId: userId } }),
+  ]);
+  const postIds = posts.results.map((n) => n.value.id);
+  const commentIds = comments.results.map((n) => n.value.id);
+  if (!postIds.length && !commentIds.length) return 0;
+
+  const queries = [];
+  if (postIds.length) queries.push(db.map({ query: { type: TYPE.postVote, postId: { $in: postIds } } }));
+  if (commentIds.length) queries.push(db.map({ query: { type: TYPE.commentVote, commentId: { $in: commentIds } } }));
+
+  let karma = 0;
+  for (const { results } of await Promise.all(queries)) {
+    for (const n of results) karma += n.value.direction === "up" ? 1 : -1;
+  }
+  return karma;
+}

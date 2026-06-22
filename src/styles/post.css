@@ -1,0 +1,110 @@
+/* Post detail + comments. */
+
+.post-detail {
+  display: flex;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  margin-bottom: var(--s-6);
+}
+.post-detail-body {
+  flex: 1;
+  min-width: 0;
+}
+.post-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--s-3);
+}
+
+/* Rendered Markdown */
+.markdown {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  color: var(--text);
+  margin: 1em 0 0.4em;
+  line-height: 1.2;
+}
+.markdown p {
+  margin: 0 0 0.7em;
+}
+.markdown a {
+  color: var(--accent);
+}
+.markdown code {
+  background: var(--surface-2);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+.markdown pre {
+  background: var(--bg-2);
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  overflow-x: auto;
+  border: 1px solid var(--border);
+}
+.markdown pre code {
+  background: none;
+  padding: 0;
+}
+.markdown blockquote {
+  border-left: 3px solid var(--border-strong);
+  margin: 0 0 0.7em;
+  padding-left: var(--s-3);
+  color: var(--muted);
+}
+.markdown ul {
+  margin: 0 0 0.7em;
+  padding-left: 1.2em;
+}
+
+/* Comments */
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 var(--s-4);
+}
+.comment-form {
+  margin-bottom: var(--s-5);
+}
+.comment-form .row {
+  margin-top: var(--s-2);
+  justify-content: flex-end;
+}
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.comment {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.post-votes.sm .vote {
+  font-size: 11px;
+  padding: 2px 4px;
+}
+.post-votes.sm .score {
+  font-size: 13px;
+}
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+.comment-body p {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
