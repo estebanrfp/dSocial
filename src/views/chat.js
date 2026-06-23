@@ -3,7 +3,7 @@
 // live via subscribeConversation. Start a new chat by pasting a 0x address.
 import { initChat, sendMessage, subscribeConversation, subscribeInbox, listConversations, subscribeTyping, sendTyping } from "../services/chat.js";
 import { activeAddress } from "../services/identity.js";
-import { abbr } from "../state/session.js";
+import { displayNameFor } from "../services/names.js";
 import { timeAgo } from "../utils/format.js";
 import { esc } from "../ui/base.js";
 
@@ -52,7 +52,7 @@ export default async (params) => {
           .map(
             (c) =>
               `<li><button class="conv ${c.id === activePeer ? "active" : ""}" data-peer="${esc(c.id)}">
-                <span class="conv-addr">${esc(abbr(c.id))}</span><time>${timeAgo(c.lastAt)}</time></button></li>`,
+                <span class="conv-addr">${esc(displayNameFor(c.id))}</span><time>${timeAgo(c.lastAt)}</time></button></li>`,
           )
           .join("")
       : `<li class="conv-empty muted">No conversations yet.</li>`;
@@ -67,11 +67,11 @@ export default async (params) => {
     clearTimeout(typingTimer);
     threadBox.innerHTML = `
       <header class="thread-head">
-        <span class="thread-peer">${esc(abbr(peer))}</span>
+        <span class="thread-peer">${esc(displayNameFor(peer))}</span>
         <span class="lock-badge" title="End-to-end encrypted (RSA-OAEP)">🔒 E2E encrypted</span>
       </header>
       <div class="messages" data-messages></div>
-      <div class="typing-ind muted small" data-typing hidden><span class="typing-dots"><span></span><span></span><span></span></span>${esc(abbr(peer))} is typing</div>
+      <div class="typing-ind muted small" data-typing hidden><span class="typing-dots"><span></span><span></span><span></span></span>${esc(displayNameFor(peer))} is typing</div>
       <form class="composer" data-send>
         <input class="input" name="text" placeholder="Type an encrypted message…" autocomplete="off" />
         <button class="btn btn-primary" type="submit">Send</button>

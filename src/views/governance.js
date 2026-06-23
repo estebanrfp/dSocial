@@ -7,6 +7,7 @@ import { navigate } from "../router/router.js";
 import { activeAddress, recoverWithMnemonic } from "../services/identity.js";
 import { subscribeRole, subscribeRoster } from "../services/roles.js";
 import { abbr } from "../state/session.js";
+import { displayNameFor } from "../services/names.js";
 import { esc } from "../ui/base.js";
 
 const ROLE_ORDER = ["guest", "member", "trusted", "superadmin"];
@@ -91,7 +92,7 @@ export default async () => {
     standingBox.innerHTML = `
       <h2>Your standing</h2>
       <div class="standing-row">
-        <span class="addr mono">${esc(abbr(me))}</span>
+        <span class="addr mono">${esc(displayNameFor(me))}</span>
         <span class="role-chip role-${esc(shown)} big">${esc(ROLE_LABEL[shown] || shown)}</span>
       </div>
       ${note}${progress}`;
@@ -116,7 +117,7 @@ export default async () => {
       ? rows
           .map(
             (u) =>
-              `<li><span class="addr mono">${esc(abbr(u.address))}</span><span class="role-chip role-${esc(u.role)}">${esc(ROLE_LABEL[u.role] || u.role)}</span>${u.postCount ? `<span class="small muted">${u.postCount} posts</span>` : ""}</li>`,
+              `<li><span class="addr mono">${esc(displayNameFor(u.address))}</span><span class="role-chip role-${esc(u.role)}">${esc(ROLE_LABEL[u.role] || u.role)}</span>${u.postCount ? `<span class="small muted">${u.postCount} posts</span>` : ""}</li>`,
           )
           .join("")
       : `<li class="muted small">No members yet.</li>`;

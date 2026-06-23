@@ -7,6 +7,7 @@
 await import("./db/gdb.js");
 await import("./services/net.js"); // start tracking P2P peers from app start
 await import("./services/tier-watch.js"); // celebrate karma tier-ups with a toast
+(await import("./services/names.js")).startNames(); // live cache: names instead of 0x… addresses
 
 const { mountShell } = await import("./ui/shell.js");
 const { mountOnboarding } = await import("./views/onboarding.js");

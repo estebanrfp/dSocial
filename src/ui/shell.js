@@ -1,6 +1,7 @@
 // App shell: a sticky top bar (brand + primary nav + identity badge) and the
 // router outlet. Mounted once; the badge reacts to the identity signal.
-import { identity, abbr } from "../state/session.js";
+import { identity } from "../state/session.js";
+import { displayNameFor, onNameChange } from "../services/names.js";
 import { logout } from "../services/identity.js";
 import { subscribeRole } from "../services/roles.js";
 import { SUPER_ADMINS } from "../db/gdb.js";
@@ -38,7 +39,7 @@ export function mountShell(root) {
     unsubRole = null;
     right.innerHTML = addr
       ? `<a class="id-role role-chip role-guest" href="/governance" title="Your role — governance" data-rolechip>guest</a>
-         <a class="id-pill" href="/profile" title="Your profile">${esc(abbr(addr))}</a>
+         <a class="id-pill" href="/profile" title="Your profile">${esc(displayNameFor(addr))}</a>
          <button class="btn btn-ghost btn-sm" data-logout>Log out</button>`
       : "";
     right.querySelector("[data-logout]")?.addEventListener("click", () => logout());
@@ -54,6 +55,14 @@ export function mountShell(root) {
     }).then((u) => (unsubRole = u));
   };
   identity.subscribe(renderBadge);
+  // Update my own id-pill the moment my profile gets (or changes) a name.
+  onNameChange((changed) => {
+    const addr = identity();
+    if (addr && changed === addr) {
+      const pill = right.querySelector(".id-pill");
+      if (pill) pill.textContent = displayNameFor(addr);
+    }
+  });
 
   return root.querySelector("#outlet");
 }

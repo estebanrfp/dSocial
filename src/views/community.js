@@ -7,6 +7,7 @@ import { subscribePolls } from "../services/polls.js";
 import { stripMarkdown } from "../utils/markdown.js";
 import { timeAgo, plural } from "../utils/format.js";
 import { abbr } from "../state/session.js";
+import { displayNameFor, onNameChange } from "../services/names.js";
 import { activeAddress } from "../services/identity.js";
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
@@ -165,8 +166,9 @@ export default async function community({ communityId }) {
 
   const unsubWatch = await watchPostScores(communityId, rescore);
   const unsubPolls = await subscribePolls(communityId, (p) => { polls = p; renderFeed(); });
+  const unsubNames = onNameChange(() => renderFeed()); // a profile got named → refresh bylines
   await loadMore(); // first page
-  el._cleanup = () => { io.disconnect(); unsubWatch?.(); unsubPolls?.(); };
+  el._cleanup = () => { io.disconnect(); unsubWatch?.(); unsubPolls?.(); unsubNames?.(); };
   return el;
 }
 
@@ -198,7 +200,7 @@ function postCard(p, canMod, me) {
         <div class="post-body">
           <h3>${esc(p.title)}</h3>
           ${snippet ? html`<p class="muted">${esc(snippet)}</p>` : ""}
-          <span class="meta">${esc(abbr(p.authorId))} · ${esc(timeAgo(p.createdAt))} · ${esc(plural(p.commentCount, "comment"))}</span>
+          <span class="meta">${esc(displayNameFor(p.authorId))} · ${esc(timeAgo(p.createdAt))} · ${esc(plural(p.commentCount, "comment"))}</span>
         </div>
       </a>
       ${canDelete ? html`<button class="icon-btn post-del" data-del-post="${esc(p.id)}" data-mine="${mine ? "1" : ""}" title="${mine ? "Delete your post" : "Delete (moderator)"}" aria-label="Delete post">🗑</button>` : ""}
