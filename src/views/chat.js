@@ -1,7 +1,7 @@
 // Direct messages: a conversation list + an end-to-end encrypted thread. The
 // keypair is set up on mount (publishes our public `chatKey`); messages decrypt
 // live via subscribeConversation. Start a new chat by pasting a 0x address.
-import { initChat, sendMessage, subscribeConversation, subscribeInbox, listConversations } from "../services/chat.js";
+import { initChat, sendMessage, subscribeConversation, subscribeInbox, listConversations, subscribeTyping, sendTyping } from "../services/chat.js";
 import { activeAddress } from "../services/identity.js";
 import { abbr } from "../state/session.js";
 import { timeAgo } from "../utils/format.js";
@@ -41,6 +41,8 @@ export default async (params) => {
   const convList = el.querySelector("[data-convs]");
   const threadBox = el.querySelector("[data-thread]");
   let unsubThread = null;
+  let unsubTyping = null;
+  let typingTimer = null;
   let activePeer = null;
 
   const renderConvs = async () => {
@@ -60,23 +62,32 @@ export default async (params) => {
     activePeer = peer;
     unsubThread?.();
     unsubThread = null;
+    unsubTyping?.();
+    unsubTyping = null;
+    clearTimeout(typingTimer);
     threadBox.innerHTML = `
       <header class="thread-head">
         <span class="thread-peer">${esc(abbr(peer))}</span>
         <span class="lock-badge" title="End-to-end encrypted (RSA-OAEP)">🔒 E2E encrypted</span>
       </header>
       <div class="messages" data-messages></div>
+      <div class="typing-ind muted small" data-typing hidden><span class="typing-dots"><span></span><span></span><span></span></span>${esc(abbr(peer))} is typing</div>
       <form class="composer" data-send>
         <input class="input" name="text" placeholder="Type an encrypted message…" autocomplete="off" />
         <button class="btn btn-primary" type="submit">Send</button>
       </form>`;
     const msgBox = threadBox.querySelector("[data-messages]");
-    threadBox.querySelector("[data-send]").addEventListener("submit", async (e) => {
+    const typingEl = threadBox.querySelector("[data-typing]");
+    const composer = threadBox.querySelector("[data-send]");
+    const input = composer.elements.text;
+
+    composer.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const input = e.target.elements.text;
       const text = input.value.trim();
       if (!text) return;
       input.value = "";
+      clearTimeout(typingTimer);
+      sendTyping(peer, false); // stop the indicator the moment we send
       try {
         await sendMessage(peer, text);
       } catch (err) {
@@ -84,6 +95,18 @@ export default async (params) => {
         alert(err.message);
       }
     });
+
+    // Broadcast my typing state, auto-clearing after 2s idle (fork's pattern).
+    input.addEventListener("input", () => {
+      sendTyping(peer, true);
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => sendTyping(peer, false), 2000);
+    });
+
+    unsubTyping = subscribeTyping(peer, (isTyping) => {
+      if (typingEl) typingEl.hidden = !isTyping;
+    });
+
     unsubThread = await subscribeConversation(peer, (msgs) => {
       msgBox.innerHTML = msgs
         .map(
@@ -116,6 +139,8 @@ export default async (params) => {
 
   el._cleanup = () => {
     unsubThread?.();
+    unsubTyping?.();
+    clearTimeout(typingTimer);
     unsubInbox?.();
   };
   return el;

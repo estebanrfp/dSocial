@@ -113,3 +113,34 @@ export async function listConversations() {
   }
   return [...peers.entries()].map(([id, lastAt]) => ({ id, lastAt })).sort((a, b) => b.lastAt - a.lastAt);
 }
+
+// ── Ephemeral typing indicators (a GenosRTC data channel, never the DB) ───────
+// Mirrors the fork's chatService: one `chat-typing` room channel carries
+// { from, to, isTyping }; the receiver keeps only signals addressed to it. A single
+// module-level handler dispatches to the active conversation, so we never stack
+// listeners (channel.on has no off). Signals are best-effort — dropped if no peers.
+let typingChannel = null;
+let onTypingCb = null;
+
+function ensureTypingChannel() {
+  if (typingChannel) return typingChannel;
+  typingChannel = db.room.channel("chat-typing");
+  typingChannel.on("message", (data) => {
+    if (data?.to === myId && onTypingCb) onTypingCb({ from: data.from, isTyping: !!data.isTyping });
+  });
+  return typingChannel;
+}
+
+/** Subscribe to `peerId`'s typing signals. `onTyping(isTyping)` fires on change. Returns unsub. */
+export function subscribeTyping(peerId, onTyping) {
+  if (!myId) myId = activeAddress();
+  ensureTypingChannel();
+  onTypingCb = ({ from, isTyping }) => { if (from === peerId) onTyping(isTyping); };
+  return () => { onTypingCb = null; };
+}
+
+/** Tell `recipientId` whether I'm typing (ephemeral; no-op if no peers are connected). */
+export function sendTyping(recipientId, isTyping) {
+  if (!myId) myId = activeAddress();
+  try { ensureTypingChannel().send({ from: myId, to: recipientId, isTyping: !!isTyping }); } catch { /* no peers yet */ }
+}
