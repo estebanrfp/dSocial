@@ -11,6 +11,7 @@ import { displayNameFor } from "../services/names.js";
 import { activeAddress, getKarma } from "../services/identity.js";
 import { getImage } from "../services/images.js";
 import { badgeChip } from "../services/badges.js";
+import { setViewing, viewersOf, onPresence } from "../services/presence.js";
 
 /** @returns {Promise<HTMLElement>} */
 export default async function postView({ postId }) {
@@ -52,6 +53,8 @@ export default async function postView({ postId }) {
         </div>
       </div>
     </article>
+
+    <div class="viewing-now" data-viewing hidden></div>
 
     <h2 class="section-title">Comments</h2>
     <form class="comment-form" data-form>
@@ -117,7 +120,27 @@ export default async function postView({ postId }) {
     );
   };
 
-  el._cleanup = await subscribeComments(postId, renderComments);
+  // Live "viewing now": announce I'm on this post; show other peers viewing it.
+  const viewingEl = el.querySelector("[data-viewing]");
+  const renderViewers = () => {
+    const addrs = viewersOf(postId);
+    if (!addrs.length) { viewingEl.hidden = true; return; }
+    viewingEl.hidden = false;
+    const names = addrs.slice(0, 3).map(displayNameFor);
+    const extra = addrs.length - names.length;
+    const who = names.join(", ") + (extra > 0 ? ` +${extra}` : "");
+    viewingEl.innerHTML = `<span class="viewing-dot"></span>${esc(who)} viewing now`;
+  };
+
+  const unsubComments = await subscribeComments(postId, renderComments);
+  setViewing(postId);
+  const unsubPresence = onPresence(renderViewers);
+  renderViewers();
+  el._cleanup = () => {
+    unsubComments?.();
+    unsubPresence?.();
+    setViewing(null); // tell peers I've left this post
+  };
   return el;
 }
 
