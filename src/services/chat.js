@@ -3,7 +3,7 @@
 // `chatKey` node). A message is encrypted for the recipient AND the sender, then
 // written as an ACL-owned `dm` node; the recipient is granted `write` (to mark it
 // read) but not delete. The synced node IS the delivery. Ported from the fork.
-import { db } from "../db/gdb.js";
+import { db, P2P_CHANNELS_ENABLED } from "../db/gdb.js";
 import { TYPE } from "../db/schema.js";
 import { activeAddress } from "./identity.js";
 import { idbGet, idbSet } from "../utils/keystore.js";
@@ -124,6 +124,7 @@ const typingCallbacks = new Map(); // peerId -> (isTyping) => void
 
 function ensureTypingChannel() {
   if (typingChannel) return typingChannel;
+  if (!P2P_CHANNELS_ENABLED) return null; // channels paused — see gdb.js
   typingChannel = db.room.channel("chat-typing");
   typingChannel.on("message", (data) => {
     if (data?.to !== myId) return;
@@ -158,5 +159,5 @@ export function subscribeTyping(peerId, onTyping) {
 /** Tell `recipientId` whether I'm typing (ephemeral; no-op if no peers are connected). */
 export function sendTyping(recipientId, isTyping) {
   if (!myId) myId = activeAddress();
-  try { ensureTypingChannel().send({ from: myId, to: recipientId, isTyping: !!isTyping }); } catch { /* no peers yet */ }
+  try { ensureTypingChannel()?.send({ from: myId, to: recipientId, isTyping: !!isTyping }); } catch { /* no peers yet */ }
 }

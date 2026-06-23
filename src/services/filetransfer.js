@@ -2,7 +2,7 @@
 // the engine's native chunked `channel.send(buffer, target, metadata, onProgress)`
 // and `progress`/`message` events, targeted at the recipient's peerId (so it's a
 // real 1:1 transfer, not a broadcast). Both peers must be connected.
-import { db } from "../db/gdb.js";
+import { db, P2P_CHANNELS_ENABLED } from "../db/gdb.js";
 import { peerIdFor } from "./roster.js";
 
 let channel = null;
@@ -11,6 +11,7 @@ let onIncomingProgress = null; // (percent, peerId, metadata) => void
 
 function ensureChannel() {
   if (channel) return channel;
+  if (!P2P_CHANNELS_ENABLED) return null; // channels paused — see gdb.js
   channel = db.room.channel("file");
   channel.on("message", (data, peerId, metadata) => onIncoming?.(data, peerId, metadata));
   channel.on("progress", (percent, peerId, metadata) => onIncomingProgress?.(percent, peerId, metadata));
@@ -32,6 +33,7 @@ export const MAX_FILE_BYTES = 1_400_000;
  * @returns {Promise<"sent"|"offline"|"too-large">}
  */
 export async function sendFileTo(recipientAddress, file, onProgress) {
+  if (!P2P_CHANNELS_ENABLED) return "offline"; // channels paused — see gdb.js
   if (file.size > MAX_FILE_BYTES) return "too-large";
   const peerId = peerIdFor(recipientAddress);
   if (!peerId) return "offline";

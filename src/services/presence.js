@@ -3,7 +3,7 @@
 // address (so the UI can show a name). Mirrors the cursor.html pattern: a `presence`
 // room channel + peer:join/leave. On a new peer joining we re-announce, so newcomers
 // learn the current state without a heartbeat (state is also re-sent on every move).
-import { db } from "../db/gdb.js";
+import { db, P2P_CHANNELS_ENABLED } from "../db/gdb.js";
 import { activeAddress } from "./identity.js";
 
 let channel = null;
@@ -19,7 +19,7 @@ function announce() {
   const address = activeAddress();
   if (!address) return;
   try {
-    ensureChannel().send({ address, target: currentTarget });
+    ensureChannel()?.send({ address, target: currentTarget });
   } catch {
     /* no peers connected yet — nothing to announce to */
   }
@@ -27,6 +27,7 @@ function announce() {
 
 function ensureChannel() {
   if (channel) return channel;
+  if (!P2P_CHANNELS_ENABLED) return null; // channels paused — see gdb.js
   channel = db.room.channel("presence");
   channel.on("message", (data, peerId) => {
     if (!data?.address) return;
@@ -52,6 +53,7 @@ function ensureChannel() {
 
 /** Announce that I'm now viewing `target` (a post/community id), or null to clear. */
 export function setViewing(target) {
+  if (!P2P_CHANNELS_ENABLED) return; // channels paused — see gdb.js
   ensureChannel();
   currentTarget = target;
   announce();

@@ -3,7 +3,7 @@
 // addresses — this bridges the two. Each peer announces its address over a `whoami`
 // room channel on join + a heartbeat; peer:leave drops it. Same convergence pattern
 // as presence (a one-shot announce is lost before the P2P link is up).
-import { db } from "../db/gdb.js";
+import { db, P2P_CHANNELS_ENABLED } from "../db/gdb.js";
 import { activeAddress } from "./identity.js";
 
 let channel = null;
@@ -19,7 +19,7 @@ function announce() {
   const address = activeAddress();
   if (!address) return;
   try {
-    ensureChannel().send({ address });
+    ensureChannel()?.send({ address });
   } catch {
     /* no peers yet */
   }
@@ -27,6 +27,7 @@ function announce() {
 
 function ensureChannel() {
   if (channel) return channel;
+  if (!P2P_CHANNELS_ENABLED) return null; // channels paused — see gdb.js
   channel = db.room.channel("whoami");
   channel.on("message", (data, peerId) => {
     if (!data?.address) return;
@@ -51,6 +52,7 @@ function ensureChannel() {
 
 /** Start announcing our identity + tracking peers (idempotent; call once at startup). */
 export function startRoster() {
+  if (!P2P_CHANNELS_ENABLED) return; // channels paused — see gdb.js
   ensureChannel();
   announce();
 }
