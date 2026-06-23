@@ -176,14 +176,24 @@ export async function subscribePosts(communityId, onChange) {
 }
 
 /**
- * Live score updates for a *paginated* community feed (pairs with loadPostsPage):
- * calls `onScore(postId)` whenever a post's votes or comments change, so the view
- * can re-derive just that already-loaded post — no full re-scan. Returns an
- * unsubscribe. (Brand-new posts surface on reload; pagination owns the river.)
+ * Live updates for a *paginated* community feed (pairs with loadPostsPage):
+ * - `onScore(postId)` when a loaded post's votes/comments change → re-derive that post.
+ * - `onNew(postId)` when a brand-new post arrives from a peer, so the feed stays live
+ *   (it was lost when pagination replaced subscribePosts). "New" = `createdAt > since`
+ *   (the feed's mount time), which is robust to db.map replaying the initial set on
+ *   subscribe — no fragile action/known-set detection.
+ * Returns an unsubscribe.
  */
-export async function watchPostScores(communityId, onScore) {
-  const relay = ({ value }) => { const pid = value?.postId; if (pid) onScore(pid); };
+export async function watchPostUpdates(communityId, { onScore, onNew, since = 0 } = {}) {
+  const relay = ({ value }) => { const pid = value?.postId; if (pid) onScore?.(pid); };
   const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.postVote } }, relay);
   const { unsubscribe: commentUnsub } = await db.map({ query: { type: TYPE.comment, communityId } }, relay);
-  return () => { voteUnsub?.(); commentUnsub?.(); };
+  const { unsubscribe: postUnsub } = await db.map(
+    { query: { type: TYPE.post, communityId } },
+    ({ id, value, action }) => {
+      if (action === "removed") return onScore?.(id); // view drops missing posts
+      if (value?.type === TYPE.post && (value.createdAt ?? 0) > since) onNew?.(id);
+    },
+  );
+  return () => { voteUnsub?.(); commentUnsub?.(); postUnsub?.(); };
 }

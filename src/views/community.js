@@ -2,7 +2,7 @@
 // posts and polls (newest first). Scores/tallies derive from signed votes.
 import { html, esc } from "../ui/base.js";
 import { getCommunity, isMember, joinCommunity, addModerator, removeModerator } from "../services/communities.js";
-import { loadPostsPage, watchPostScores, getPost, voteOnPost, deletePost } from "../services/posts.js";
+import { loadPostsPage, watchPostUpdates, getPost, voteOnPost, deletePost } from "../services/posts.js";
 import { subscribePolls } from "../services/polls.js";
 import { stripMarkdown } from "../utils/markdown.js";
 import { timeAgo, plural } from "../utils/format.js";
@@ -155,7 +155,10 @@ export default async function community({ communityId }) {
     { rootMargin: "400px" },
   );
 
-  // Keep already-loaded posts live (vote scores / comment counts) without re-scanning.
+  // Keep loaded posts live (scores), AND surface brand-new posts from peers in real time
+  // (this live-new path was lost when pagination replaced subscribePosts — the "feed
+  // doesn't sync" regression). `since` = mount time so the initial set isn't re-added.
+  const mountedAt = Date.now();
   const rescore = async (pid) => {
     if (!postMap.has(pid)) return;
     const fresh = await getPost(pid);
@@ -163,8 +166,13 @@ export default async function community({ communityId }) {
     else postMap.delete(pid);
     renderFeed();
   };
+  const addNew = async (pid) => {
+    if (postMap.has(pid)) return;
+    const fresh = await getPost(pid);
+    if (fresh) { postMap.set(pid, fresh); renderFeed(); }
+  };
 
-  const unsubWatch = await watchPostScores(communityId, rescore);
+  const unsubWatch = await watchPostUpdates(communityId, { onScore: rescore, onNew: addNew, since: mountedAt });
   const unsubPolls = await subscribePolls(communityId, (p) => { polls = p; renderFeed(); });
   const unsubNames = onNameChange(() => renderFeed()); // a profile got named → refresh bylines
   await loadMore(); // first page
