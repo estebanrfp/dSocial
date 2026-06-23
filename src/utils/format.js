@@ -16,3 +16,16 @@ export function timeAgo(ts) {
 
 /** Pluralize: count(1,'member') → "1 member". */
 export const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/** Human-readable byte size: "512 B", "820 KB", "1.4 MB". */
+export const formatBytes = (n) => {
+  if (!n || n < 1024) return `${n || 0} B`;
+  const units = ["KB", "MB", "GB"];
+  let value = n;
+  let i = -1;
+  do {
+    value /= 1024;
+    i++;
+  } while (value >= 1024 && i < units.length - 1);
+  return `${value.toFixed(1)} ${units[i]}`;
+};

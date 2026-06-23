@@ -4,7 +4,9 @@
 import { initChat, sendMessage, subscribeConversation, subscribeInbox, listConversations, subscribeTyping, sendTyping } from "../services/chat.js";
 import { activeAddress } from "../services/identity.js";
 import { displayNameFor } from "../services/names.js";
-import { timeAgo } from "../utils/format.js";
+import { sendFileTo, onFile, MAX_FILE_BYTES } from "../services/filetransfer.js";
+import { isOnline, onRoster, peerIdFor } from "../services/roster.js";
+import { timeAgo, formatBytes } from "../utils/format.js";
 import { esc } from "../ui/base.js";
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
@@ -42,6 +44,7 @@ export default async (params) => {
   const threadBox = el.querySelector("[data-thread]");
   let unsubThread = null;
   let unsubTyping = null;
+  let unsubRoster = null;
   let typingTimer = null;
   let activePeer = null;
 
@@ -64,22 +67,108 @@ export default async (params) => {
     unsubThread = null;
     unsubTyping?.();
     unsubTyping = null;
+    unsubRoster?.();
+    unsubRoster = null;
     clearTimeout(typingTimer);
     threadBox.innerHTML = `
       <header class="thread-head">
-        <span class="thread-peer">${esc(displayNameFor(peer))}</span>
+        <span class="thread-peer">${esc(displayNameFor(peer))}<span class="peer-status" data-status></span></span>
         <span class="lock-badge" title="End-to-end encrypted (RSA-OAEP)">🔒 E2E encrypted</span>
       </header>
       <div class="messages" data-messages></div>
+      <div class="transfers" data-transfers></div>
       <div class="typing-ind muted small" data-typing hidden><span class="typing-dots"><span></span><span></span><span></span></span>${esc(displayNameFor(peer))} is typing</div>
       <form class="composer" data-send>
+        <input type="file" data-file hidden />
+        <button type="button" class="icon-btn attach-btn" data-attach title="Send a file (peer-to-peer)" aria-label="Send a file">📎</button>
         <input class="input" name="text" placeholder="Type an encrypted message…" autocomplete="off" />
         <button class="btn btn-primary" type="submit">Send</button>
       </form>`;
     const msgBox = threadBox.querySelector("[data-messages]");
     const typingEl = threadBox.querySelector("[data-typing]");
+    const transfersEl = threadBox.querySelector("[data-transfers]");
     const composer = threadBox.querySelector("[data-send]");
     const input = composer.elements.text;
+    const fileInput = threadBox.querySelector("[data-file]");
+    const attachBtn = threadBox.querySelector("[data-attach]");
+    const statusEl = threadBox.querySelector("[data-status]");
+
+    // Connection status — file transfer requires BOTH peers connected.
+    const updateStatus = () => {
+      const on = isOnline(peer);
+      statusEl.className = `peer-status ${on ? "online" : "offline"}`;
+      statusEl.title = on ? "Connected — file transfer available" : "Offline — can't transfer files";
+      attachBtn.disabled = !on;
+      attachBtn.title = on ? "Send a file (peer-to-peer)" : "Offline — both must be connected to transfer";
+    };
+    updateStatus();
+    unsubRoster = onRoster(updateStatus);
+
+    // 1:1 file transfer with a live progress bar (sender + receiver sides).
+    const bars = new Map(); // key -> { row, fill, pct }
+    const bar = (key, name, dir) => {
+      let b = bars.get(key);
+      if (!b) {
+        const row = document.createElement("div");
+        row.className = `transfer transfer-${dir}`;
+        row.innerHTML = `<span class="transfer-name">${dir === "in" ? "↓" : "↑"} ${esc(name)}</span><span class="transfer-bar"><span class="transfer-fill"></span></span><span class="transfer-pct">0%</span>`;
+        transfersEl.appendChild(row);
+        transfersEl.scrollTop = transfersEl.scrollHeight;
+        b = { row, pct: row.querySelector(".transfer-pct") };
+        bars.set(key, b);
+      }
+      return b;
+    };
+    const setPct = (key, p) => {
+      const b = bars.get(key);
+      if (b) { b.row.style.setProperty("--pct", p); b.pct.textContent = `${Math.round(p * 100)}%`; }
+    };
+
+    attachBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      fileInput.value = "";
+      if (!file) return;
+      if (file.size > MAX_FILE_BYTES)
+        return alert(`"${file.name}" is too large (${formatBytes(file.size)}). Direct P2P transfer is capped at ${formatBytes(MAX_FILE_BYTES)} — pick a smaller file.`);
+      if (!isOnline(peer)) return alert("This person is offline — you can only send files while both of you are connected.");
+      const key = `out:${file.name}:${Date.now()}`;
+      bar(key, `${file.name} · ${formatBytes(file.size)}`, "out");
+      try {
+        const result = await sendFileTo(peer, file, (p) => setPct(key, p));
+        if (result === "sent") {
+          setPct(key, 1);
+          bars.get(key).row.classList.add("done");
+          bars.get(key).pct.textContent = "Sent ✓";
+        } else {
+          bars.get(key).row.remove();
+          bars.delete(key);
+          alert(result === "too-large" ? "File too large for direct transfer." : "This person went offline.");
+        }
+      } catch (err) {
+        bars.get(key)?.row.remove();
+        bars.delete(key);
+        alert("Transfer failed: " + (err?.message || err));
+      }
+    });
+
+    // Receive files from THIS conversation's peer (handlers are global; filter by peerId).
+    onFile(
+      (data, fromPeerId, meta) => {
+        if (peerIdFor(peer) !== fromPeerId) return;
+        const key = `in:${fromPeerId}:${meta.filename}`;
+        const b = bar(key, `${meta.filename} · ${formatBytes(meta.size)}`, "in");
+        setPct(key, 1);
+        const url = URL.createObjectURL(new Blob([data], { type: meta.type || "application/octet-stream" }));
+        b.pct.innerHTML = `<a class="transfer-dl" href="${url}" download="${esc(meta.filename)}">Download</a>`;
+        b.row.classList.add("done");
+      },
+      (percent, fromPeerId, meta) => {
+        if (peerIdFor(peer) !== fromPeerId) return;
+        bar(`in:${fromPeerId}:${meta.filename}`, `${meta.filename} · ${formatBytes(meta.size)}`, "in");
+        setPct(`in:${fromPeerId}:${meta.filename}`, percent);
+      },
+    );
 
     composer.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -140,8 +229,10 @@ export default async (params) => {
   el._cleanup = () => {
     unsubThread?.();
     unsubTyping?.();
+    unsubRoster?.();
     clearTimeout(typingTimer);
     unsubInbox?.();
+    onFile(null, null); // stop receiving files when leaving the chat view
   };
   return el;
 };
