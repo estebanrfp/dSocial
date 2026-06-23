@@ -10,7 +10,7 @@ import { activeAddress } from "./identity.js";
 import * as aes from "../utils/encryption.js";
 
 const VAULT = "interpoll-rooms";
-const salt = (roomId) => `${roomId}:interpoll-vanilla`;
+const salt = (roomId) => `${roomId}:interpoll-vanilla-v2`;
 
 const readVault = () => {
   try {

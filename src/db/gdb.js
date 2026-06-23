@@ -6,8 +6,9 @@
 // build emits those .min.js next to the output bundle (see scripts/copy-genosdb.js).
 import { gdb } from "genosdb";
 
-/** Database id — also the P2P room name. A fresh room for the vanilla edition. */
-export const GDB_NAME = "interpoll-vanilla";
+/** Database id — also the P2P room name. Bumped to v2 to start from a clean graph
+ *  (the previous room accumulated test data during development). */
+export const GDB_NAME = "interpoll-vanilla-v2";
 
 // Bootstrap superadmins = the governance signers (RBAC notaries). Two are set:
 // the operator's own address (Esteban — the real root of trust), and a throwaway
