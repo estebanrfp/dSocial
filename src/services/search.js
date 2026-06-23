@@ -10,14 +10,15 @@ async function searchType(type, fields, query) {
   return results.map((n) => n.value);
 }
 
-/** Search communities, posts and users at once. Returns grouped matches. */
+/** Search communities, posts, polls and people at once. Returns grouped matches. */
 export async function searchAll(query) {
   const q = String(query).trim();
-  if (q.length < 2) return { communities: [], posts: [], users: [] };
-  const [communities, posts, users] = await Promise.all([
+  if (q.length < 2) return { communities: [], posts: [], polls: [], users: [] };
+  const [communities, posts, polls, users] = await Promise.all([
     searchType(TYPE.community, ["name", "displayName", "description"], q),
     searchType(TYPE.post, ["title", "content"], q),
+    searchType(TYPE.poll, ["question", "description"], q),
     searchType(TYPE.user, ["displayName", "bio"], q),
   ]);
-  return { communities, posts, users };
+  return { communities, posts, polls, users };
 }

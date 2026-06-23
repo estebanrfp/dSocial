@@ -1,5 +1,5 @@
-// Search: a debounced field-level $text query across communities, posts and
-// people, grouped by type. Each result links to its page.
+// Search: a debounced field-level $text query across communities, posts, polls
+// and people, grouped by type. Each result links to its page.
 import { html, esc } from "../ui/base.js";
 import { searchAll } from "../services/search.js";
 import { abbr } from "../state/session.js";
@@ -22,8 +22,8 @@ export default async () => {
   let timer = null;
   let token = 0;
 
-  const render = ({ communities, posts, users }) => {
-    if (!communities.length && !posts.length && !users.length) {
+  const render = ({ communities, posts, polls, users }) => {
+    if (!communities.length && !posts.length && !polls.length && !users.length) {
       box.innerHTML = html`<p class="muted">No matches.</p>`;
       return;
     }
@@ -40,6 +40,13 @@ export default async () => {
         posts.map(
           (p) =>
             `<a class="result" href="/p/${esc(p.id)}"><div class="result-body"><strong>${esc(p.title)}</strong><span class="muted small">${esc(stripMarkdown(p.content || "").slice(0, 90))} · ${esc(timeAgo(p.createdAt))}</span></div></a>`,
+        ),
+      ),
+      group(
+        "Polls",
+        polls.map(
+          (p) =>
+            `<a class="result" href="/poll/${esc(p.id)}"><div class="result-body"><strong>${esc(p.question)}</strong><span class="muted small">${esc(stripMarkdown(p.description || "").slice(0, 90))} · ${esc(timeAgo(p.createdAt))}</span></div></a>`,
         ),
       ),
       group(
