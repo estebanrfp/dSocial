@@ -46,16 +46,18 @@ posts, a post's comments, and search results. Keep live reactivity.
 - Done when: a large seeded community shows its first page instantly and scrolls
   without loading the whole set; live updates still work.
 
-### 2. Advanced search & moderation
-- **rx (radix tree)** — `$startsWith` / `searchByPrefix` for indexed prefix
-  autocomplete on users/communities; enable `rx` in init.
-  Sources: `docs/rx-radix-tree.md`, `examples/search.html`.
-- **nlq** — natural-language queries in the search bar ("polls about climate this
-  week" → operator query); enable `nlq`. Pure syntactic mapping, no external AI.
-  Sources: `docs/nlq-module.md`, `examples/nlquery.html`, `examples/sandbox.html`.
-- **audit** — automatic, debounced oplog moderation against a policy prompt
-  (anti-spam), complementing the existing ACL moderation.
-  Sources: `docs/audit.md`, `examples/todolist-audit.html`.
+### 2. Advanced search — prefix index (rx)  ⛔ BLOCKED (engine bug in 0.16.0)
+- **rx (radix tree)** — intended: `$startsWith` / `searchByPrefix` for indexed prefix
+  autocomplete. **Verified NON-FUNCTIONAL in 0.16.0** with the rtc+sm setup: the module
+  loads (`db.searchByPrefix` exists) but the index stays empty after `db.put` (every
+  prefix → 0 results) and `{ id: { $startsWith } }` throws `o.filter is not a function`
+  inside `rx.min.js`. Tested exactly per `docs/rx-radix-tree.md`. Same shape as the
+  geo-module disconnect fixed in 0.15.1. **Cannot be fixed from the app** (GenosDB is
+  read-only). → Options for Esteban: (a) fix rx in the engine + bump the npm version,
+  then implement; (b) non-indexed fallback (`$like`/`$regex` prefix scan — works but
+  doesn't showcase the index); (c) skip to capability #3 (GenosRTC live).
+  Sources: `docs/rx-radix-tree.md`.
+- **Dropped by Esteban for this showcase:** `nlq` and `audit`.
 
 ### 3. GenosRTC live (real-time P2P beyond sync)
 Ephemeral data channels for **live presence + typing indicators** ("viewing now",
