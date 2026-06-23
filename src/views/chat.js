@@ -62,6 +62,7 @@ export default async (params) => {
   };
 
   const openThread = async (peer) => {
+    if (activePeer && activePeer !== peer) sendTyping(activePeer, false); // stop typing in the old thread
     activePeer = peer;
     unsubThread?.();
     unsubThread = null;
@@ -227,6 +228,7 @@ export default async (params) => {
   if (params?.peerId && ADDR_RE.test(params.peerId)) await openThread(params.peerId);
 
   el._cleanup = () => {
+    if (activePeer) sendTyping(activePeer, false); // clear my "typing" when leaving the chat
     unsubThread?.();
     unsubTyping?.();
     unsubRoster?.();

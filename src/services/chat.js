@@ -120,23 +120,39 @@ export async function listConversations() {
 // module-level handler dispatches to the active conversation, so we never stack
 // listeners (channel.on has no off). Signals are best-effort — dropped if no peers.
 let typingChannel = null;
-let onTypingCb = null;
+const typingCallbacks = new Map(); // peerId -> (isTyping) => void
 
 function ensureTypingChannel() {
   if (typingChannel) return typingChannel;
   typingChannel = db.room.channel("chat-typing");
   typingChannel.on("message", (data) => {
-    if (data?.to === myId && onTypingCb) onTypingCb({ from: data.from, isTyping: !!data.isTyping });
+    if (data?.to !== myId) return;
+    typingCallbacks.get(data.from)?.(!!data.isTyping);
   });
   return typingChannel;
 }
 
-/** Subscribe to `peerId`'s typing signals. `onTyping(isTyping)` fires on change. Returns unsub. */
+/**
+ * Subscribe to `peerId`'s typing state; `onTyping(isTyping)` fires on change. The
+ * indicator **auto-hides** after 4s of silence — we never rely on a "false"
+ * arriving, because the sender may navigate away mid-type and never send it (this
+ * was the "X is typing forever" bug). The sender re-asserts "true" on every
+ * keystroke, so it stays up while they actually type. One callback per peer (not a
+ * single global), so switching threads is clean. Returns an unsubscribe.
+ */
 export function subscribeTyping(peerId, onTyping) {
   if (!myId) myId = activeAddress();
   ensureTypingChannel();
-  onTypingCb = ({ from, isTyping }) => { if (from === peerId) onTyping(isTyping); };
-  return () => { onTypingCb = null; };
+  let hideTimer = null;
+  typingCallbacks.set(peerId, (isTyping) => {
+    clearTimeout(hideTimer);
+    onTyping(isTyping);
+    if (isTyping) hideTimer = setTimeout(() => onTyping(false), 4000);
+  });
+  return () => {
+    clearTimeout(hideTimer);
+    typingCallbacks.delete(peerId);
+  };
 }
 
 /** Tell `recipientId` whether I'm typing (ephemeral; no-op if no peers are connected). */
