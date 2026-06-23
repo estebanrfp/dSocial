@@ -4,6 +4,46 @@ All notable changes to **InterPoll (vanilla)** are documented here. Format based
 [Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.16.0**,
 its only runtime dependency — bundled into the app, with its runtime plugins copied beside the bundle.
 
+## [0.3.0] — Real-time P2P & scale
+
+Pushes the showcase into GenosDB's performance- and real-time-defining capabilities —
+the ones a casual port never reaches.
+
+### Added
+
+- **Cursor pagination + infinite scroll** — community feeds load one page at a time
+  with GenosDB's native cursor pagination (`field`/`order` + `$limit`/`$after`) plus an
+  `IntersectionObserver`, instead of loading every node and sorting in memory. Vote
+  scores stay live; the feed is instant even with thousands of posts. (`services/posts.js`
+  `loadPostsPage`/`watchPostScores`, `views/community.js`.)
+- **Live typing indicators** — a DM shows an animated "… is typing" over an ephemeral
+  `chat-typing` GenosRTC data channel (never the database), auto-clearing after 2s idle
+  and on send.
+- **"Viewing now" presence** — a post shows which other connected peers are viewing it
+  right now, over a `presence` GenosRTC channel; converges via a heartbeat and clears on
+  leave. (`services/presence.js`.)
+- **1:1 peer-to-peer file transfer** — a 📎 in a DM sends a file straight to the
+  recipient over a `file` GenosRTC channel, **targeted at their peerId** (not a
+  broadcast, never the database), with a live progress bar on both sides and a download
+  link on receipt. The thread shows the peer's connection status and only allows sending
+  when both are connected; files over ~1.4 MB are rejected up front (GenosRTC caps a
+  channel message at ~100 chunks). (`services/filetransfer.js`, `services/roster.js`.)
+- **Display names everywhere** — set a profile name and it replaces the `0x…` address
+  across the id-pill, community feed, post/comment bylines, chat and the governance
+  roster. Resolved **live** from the signed `user` node (which propagates P2P), not
+  denormalised onto each post — so a rename updates everywhere; falls back to the
+  abbreviated address. (`services/names.js`.)
+- **Polls in search** — field-level `$text` search now also covers polls
+  (question + description), alongside communities, posts and people.
+
+### Notes
+
+- New services `names`, `presence`, `roster` and `filetransfer` power the live features;
+  all the ephemeral ones ride **GenosRTC data channels**, not the database.
+- `rx` (radix prefix index) was evaluated and dropped — non-functional in GenosDB 0.16.0
+  with the rtc+sm setup (index stays empty). Audio/video rooms were considered but
+  deferred (full-mesh media tops out at a handful of peers without an SFU).
+
 ## [0.2.0] — Polish, gamification & hardening
 
 ### Added

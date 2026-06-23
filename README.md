@@ -4,8 +4,9 @@
 
 > ### ▶️ [**Live demo**](https://interpoll-vanilla-showcase.netlify.app)
 > Try it now: **https://interpoll-vanilla-showcase.netlify.app** — a running,
-> serverless build. Open it in **two browsers** to watch communities, polls,
-> votes and encrypted chat sync peer-to-peer, with no backend in between.
+> serverless build. Open it in **two browsers** to watch communities, polls and
+> votes sync peer-to-peer, chat end-to-end encrypted, and see typing, "viewing now"
+> presence and 1:1 file transfer happen live — with no backend in between.
 
 > ### 🛰️ A from-scratch GenosDB showcase
 > InterPoll's concept comes from [theEndless11's original InterPoll](https://github.com/theEndless11/decentralised).
@@ -38,6 +39,7 @@ InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer 
 - **Earned trust.** Roles aren't handed out: you climb `guest → member → trusted` by participating, under public rules every peer can verify.
 - **Reputation you can't fake.** Karma — and the badges it unlocks — are *derived* from the signed votes of others, never a stored number. There's nothing to tamper with: any peer can recompute it from the same signed nodes.
 - **Private chat.** 1:1 messages and group rooms are end-to-end encrypted in your browser; peers only ever relay ciphertext.
+- **Live, ephemeral presence.** Typing indicators, "who's viewing this now", and direct file transfers travel as real-time signals between browsers — over GenosRTC data channels, never written to the database.
 
 ---
 
@@ -55,7 +57,11 @@ InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer 
 | **Community-scoped moderation** | A community's creator (and moderators they delegate to) can remove content in *that* community only — via delegated `delete` grants, never a platform-wide censor. |
 | **Yours to delete — and only yours** | Every node is owned by your device identity. No other peer can delete or overwrite it; the operation is rejected. |
 | **Passkey or recovery phrase** | Protect your identity with a WebAuthn passkey or a 12-word BIP39 recovery phrase. |
-| **Images, search, live network** | Base64 images stored as nodes (client-side canvas compression); field-level `$text` search; a live view of connected P2P peers. |
+| **Real-time presence & typing** | See who's *viewing a post now* and *who's typing* in a DM — live over GenosRTC data channels, ephemeral (never stored). |
+| **1:1 file transfer** | Send a file straight to another connected peer over a GenosRTC data channel — targeted (not broadcast), with a live progress bar on both sides; nothing touches the database. |
+| **Display names, not addresses** | Set a profile name and it shows everywhere — feed, posts, chat — instead of your `0x…` address; resolved live from your signed profile, which propagates P2P. |
+| **Infinite-scroll feeds** | Community feeds load page-by-page with GenosDB cursor pagination (`$after`/`$limit`) — instant even with thousands of posts, not "load everything and sort". |
+| **Images, search, live network** | Base64 images stored as nodes (client-side canvas compression); field-level `$text` search over communities, posts, polls and people; a live view of connected P2P peers. |
 
 ---
 
@@ -67,7 +73,7 @@ InterPoll runs entirely on **GenosDB** — there are no servers to operate:
 
 **2. The graph (the data).** Communities, posts, comments, polls, votes, messages and profiles are stored as nodes in a local graph (persisted to your browser's OPFS storage). Each vote is its own signed node, so concurrent votes never overwrite each other — tallies are *derived*, not mutated.
 
-**3. The mesh (the sync).** GenosDB connects peers directly over **GenosRTC** — its peer-to-peer networking layer, built on WebRTC — using decentralised Nostr relays only for discovery (signaling), never for your data. Changes propagate peer-to-peer in real time, and across your own browser tabs instantly.
+**3. The mesh (the sync).** GenosDB connects peers directly over **GenosRTC** — its peer-to-peer networking layer, built on WebRTC — using decentralised Nostr relays only for discovery (signaling), never for your data. Changes propagate peer-to-peer in real time, and across your own browser tabs instantly. The same P2P link also carries **ephemeral real-time signals** — typing, "viewing now" presence, and direct 1:1 file transfers — over GenosRTC data channels, kept entirely separate from the stored graph.
 
 **4. Roles & moderation (earned, not granted).** New identities start as guests and climb to member, then trusted, by participating — under public rules every peer can verify. Moderation is per-community via node-level ACLs: a community owner and their delegated moderators can remove content in that community only.
 
@@ -168,13 +174,16 @@ Everything is a signed GenosDB node, queried reactively with `db.map`:
 | [`services/identity.js`](src/services/identity.js) | Onboarding (create/recover BIP39, passkey), profiles, derived stats + karma |
 | [`services/roles.js`](src/services/roles.js) | Governance standing (the `user:<address>` node), live role subscription |
 | [`services/communities.js`](src/services/communities.js) | Communities, derived membership, moderators |
-| [`services/posts.js`](src/services/posts.js) · [`comments.js`](src/services/comments.js) | Posts and threaded comments with signed voting |
+| [`services/posts.js`](src/services/posts.js) · [`comments.js`](src/services/comments.js) | Posts and threaded comments with signed voting; cursor pagination + live scores for the feed |
 | [`services/polls.js`](src/services/polls.js) | Polls, one-per-identity votes, derived tallies, invite codes |
 | [`services/chat.js`](src/services/chat.js) · [`chatrooms.js`](src/services/chatrooms.js) | E2E direct messages and encrypted group rooms |
 | [`services/moderation.js`](src/services/moderation.js) | Delegated, community-scoped `delete` grants |
-| [`services/search.js`](src/services/search.js) | Field-level `$text` search over the graph |
+| [`services/search.js`](src/services/search.js) | Field-level `$text` search over communities, posts, polls and people |
 | [`services/images.js`](src/services/images.js) | Canvas compression → base64 image nodes |
 | [`services/badges.js`](src/services/badges.js) · [`tier-watch.js`](src/services/tier-watch.js) | Karma reward tiers (animated inline-SVG badges) + reactive tier-up toast |
+| [`services/names.js`](src/services/names.js) | Live display-name cache from `user` nodes → names instead of `0x…` everywhere |
+| [`services/presence.js`](src/services/presence.js) | "Viewing now" presence over a GenosRTC data channel |
+| [`services/roster.js`](src/services/roster.js) · [`filetransfer.js`](src/services/filetransfer.js) | Address ↔ peerId map + targeted 1:1 file transfer with progress |
 | [`services/net.js`](src/services/net.js) | Live P2P peer tracking |
 
 ### How a vote works
@@ -191,8 +200,8 @@ src/
 ├─ db/         gdb.js — the single GenosDB instance · schema.js — node types + id schemes
 ├─ state/      signal.js — reactive primitive · session.js — identity signals
 ├─ router/     router.js — history-API SPA router, lazy-loaded views
-├─ ui/         base.js — html/esc helpers · shell.js — top bar · toast.js — tier-up toasts
-├─ services/   data + identity logic, all backed by GenosDB
+├─ ui/         base.js — html/esc helpers · shell.js — top bar · toast.js · copy.js
+├─ services/   data + identity logic + live P2P (presence, typing, file transfer)
 ├─ views/      page modules: async (params) => HTMLElement
 ├─ utils/      markdown · format · encryption (AES) · keystore (IndexedDB)
 └─ styles/     design tokens + per-feature CSS
