@@ -1,6 +1,6 @@
 {
   "name": "interpoll-vanilla",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "A peer-to-peer polling and forum app built on GenosDB — vanilla JavaScript, no UI framework.",

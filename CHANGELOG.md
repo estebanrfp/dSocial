@@ -4,6 +4,59 @@ All notable changes to **InterPoll (vanilla)** are documented here. Format based
 [Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.16.0**,
 its only runtime dependency — bundled into the app, with its runtime plugins copied beside the bundle.
 
+## [0.4.0] — Realtime correctness, hybrid rooms & consolidation
+
+Hardens the real-time layer and the rooms, and folds the P2P channels into one — the fixes
+that turn the 0.3.0 feature sprint into a solid showcase.
+
+### Changed
+
+- **One app-wide `db.map` (the store).** All reactivity now flows through a single
+  [`db/store.js`](src/db/store.js) subscription that mirrors the graph into memory; every
+  service reads and subscribes through it (`select`/`value`/`onChange`), never opening its
+  own `db.map`. This fixes the root cause of the "syncs but not live" regression: GenosDB's
+  reactivity degrades once several `db.map` subscriptions are open at once. Reads are now
+  synchronous — on a client-side database the data is already local after sync.
+- **One GenosRTC channel for P2P features.** The roster (address↔peerId) and 1:1 file
+  transfer were consolidated into a single `app` data channel ([`services/p2p.js`](src/services/p2p.js)),
+  multiplexed by message `kind` — opening several channels alongside the DB's own sync
+  channel degraded realtime. Replaces `roster.js` + `filetransfer.js`.
+- **Room messages show live display names.** A message byline resolves the name at render
+  time (`displayNameFor(senderId)`) and re-renders on rename, instead of the abbreviated
+  address that was stored on the message — so renaming a profile updates every byline live.
+
+### Added
+
+- **Hybrid group rooms.** A room is now **public** (clear name, listed in a live "Discover"
+  directory, AES key derived from the public id → one-click join) or **private** (encrypted
+  meta, invite-only, never listed). Private rooms are unchanged.
+- **Owner room deletion.** The creator can delete a room; the removal propagates peer-to-peer
+  and the room vanishes from every peer's directory and joined list (a module-level `removed`
+  listener prunes the local vault globally). Peers' own messages stay theirs (zero-trust):
+  orphaned, not force-deleted.
+
+### Removed
+
+- **Cursor pagination / infinite scroll.** Superseded by the reactive store: GenosDB is
+  client-side, so once data has synced it is already local — the feed derives synchronously
+  and stays live (new posts, deletes, scores) without paging.
+
+### Paused
+
+- **Typing indicators and "viewing now" presence** are temporarily paused (behind
+  `P2P_CHANNELS_ENABLED`) while their separate GenosRTC channels are folded into the single
+  `app` channel — the same consolidation file transfer already received. They return as
+  `kind`-multiplexed signals on that one channel.
+
+### Fixed
+
+- **Realtime regression ("syncs but not live").** Root-caused to many concurrent `db.map`
+  subscriptions, plus a `pagehide → room.leave()` handler that dropped the peer on tab
+  freeze (now `beforeunload`). Resolved by the single-store refactor above.
+- **Governance threshold off-by-one.** `postCount` is re-derived from a direct query right
+  after a write (the in-memory store lags a tick), so the 3rd post promotes to `trusted` and
+  dropping back to 2 demotes to `member`, exactly on the threshold.
+
 ## [0.3.0] — Real-time P2P & scale
 
 Pushes the showcase into GenosDB's performance- and real-time-defining capabilities —
