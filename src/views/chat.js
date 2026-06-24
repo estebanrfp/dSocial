@@ -4,8 +4,7 @@
 import { initChat, sendMessage, subscribeConversation, subscribeInbox, listConversations, subscribeTyping, sendTyping } from "../services/chat.js";
 import { activeAddress } from "../services/identity.js";
 import { displayNameFor } from "../services/names.js";
-import { sendFileTo, onFile, MAX_FILE_BYTES } from "../services/filetransfer.js";
-import { isOnline, onRoster, peerIdFor } from "../services/roster.js";
+import { sendFileTo, onFile, MAX_FILE_BYTES, isOnline, onRoster, peerIdFor } from "../services/p2p.js";
 import { timeAgo, formatBytes } from "../utils/format.js";
 import { esc } from "../ui/base.js";
 

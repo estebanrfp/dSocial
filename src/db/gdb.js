@@ -10,11 +10,12 @@ import { gdb } from "genosdb";
  *  (the previous room accumulated test data during development). */
 export const GDB_NAME = "interpoll-vanilla-v2";
 
-/** Feature switch — app-level GenosRTC data channels (typing, presence, roster,
- *  file transfer). PAUSED: opening several extra channels interferes with the DB's
- *  own realtime sync channel (the "syncs but not live" regression). The non-channel
- *  Phase-2 features (pagination, search, display names) are unaffected. Flip to
- *  `true` to re-enable — ideally after consolidating the four into a single channel. */
+/** Feature switch for the remaining LOOSE GenosRTC channels — typing (`chat-typing`)
+ *  and presence — each still on its own channel. PAUSED: opening several extra
+ *  channels interferes with the DB's own realtime sync (the "syncs but not live"
+ *  regression). Roster + 1:1 file transfer proved the fix: they now share ONE `app`
+ *  channel (services/p2p.js), always on. To revive typing/presence, fold them into
+ *  THAT channel rather than flipping this back on. */
 export const P2P_CHANNELS_ENABLED = false;
 
 // Bootstrap superadmins = the governance signers (RBAC notaries). Two are set:

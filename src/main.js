@@ -9,7 +9,7 @@ await import("./db/store.js"); // the ONE app-wide reactive db.map → live in-m
 await import("./services/net.js"); // start tracking P2P peers from app start
 await import("./services/tier-watch.js"); // celebrate karma tier-ups with a toast
 (await import("./services/names.js")).startNames(); // live cache: names instead of 0x… addresses
-(await import("./services/roster.js")).startRoster(); // address↔peerId map for 1:1 features (file transfer)
+(await import("./services/p2p.js")).startP2P(); // ONE GenosRTC channel: roster (address↔peerId) + 1:1 file transfer
 
 const { mountShell } = await import("./ui/shell.js");
 const { mountOnboarding } = await import("./views/onboarding.js");
