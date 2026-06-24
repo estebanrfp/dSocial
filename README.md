@@ -5,8 +5,8 @@
 > ### ▶️ [**Live demo**](https://interpoll-vanilla-showcase.netlify.app)
 > Try it now: **https://interpoll-vanilla-showcase.netlify.app** — a running,
 > serverless build. Open it in **two browsers** to watch communities, polls and
-> votes sync peer-to-peer in real time, chat end-to-end encrypted, and send a file
-> straight to the other browser over a 1:1 peer-to-peer transfer — no backend in between.
+> votes sync peer-to-peer in real time, chat end-to-end encrypted, and see typing,
+> "viewing now" presence and 1:1 file transfer happen live — no backend in between.
 
 > ### 🛰️ A from-scratch GenosDB showcase
 > InterPoll's concept comes from [theEndless11's original InterPoll](https://github.com/theEndless11/decentralised).
@@ -39,7 +39,7 @@ InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer 
 - **Earned trust.** Roles aren't handed out: you climb `guest → member → trusted` by participating, under public rules every peer can verify.
 - **Reputation you can't fake.** Karma — and the badges it unlocks — are *derived* from the signed votes of others, never a stored number. There's nothing to tamper with: any peer can recompute it from the same signed nodes.
 - **Private chat.** 1:1 messages and group rooms are end-to-end encrypted in your browser; peers only ever relay ciphertext.
-- **Live by default.** Every post, vote, comment and membership propagates peer-to-peer and updates in real time — no refresh, no polling. Direct 1:1 file transfers ride the same P2P link as an ephemeral signal, never written to the database.
+- **Live by default.** Every post, vote, comment and membership propagates peer-to-peer and updates in real time — no refresh, no polling. Typing, "viewing now" presence and direct 1:1 file transfers ride the same P2P link as ephemeral signals, never written to the database.
 
 ---
 
@@ -57,6 +57,7 @@ InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer 
 | **Community-scoped moderation** | A community's creator (and moderators they delegate to) can remove content in *that* community only — via delegated `delete` grants, never a platform-wide censor. |
 | **Yours to delete — and only yours** | Every node is owned by your device identity. No other peer can delete or overwrite it; the operation is rejected. |
 | **Passkey or recovery phrase** | Protect your identity with a WebAuthn passkey or a 12-word BIP39 recovery phrase. |
+| **Real-time presence & typing** | See who's *viewing a post now* and *who's typing* in a DM — ephemeral signals multiplexed over the shared GenosRTC channel, never stored. |
 | **1:1 file transfer** | Send a file straight to another connected peer over a GenosRTC data channel — targeted (not broadcast), with a live progress bar on both sides; nothing touches the database. |
 | **Display names, not addresses** | Set a profile name and it shows everywhere — feed, posts, chat — instead of your `0x…` address; resolved live from your signed profile, which propagates P2P. |
 | **Live reactive feeds** | One app-wide `db.map` mirrors the whole graph into memory; feeds, scores and tallies derive from it synchronously and stay live — new posts, deletes and votes from any peer, no reload. GenosDB is client-side, so reads are local and instant. |
@@ -72,7 +73,7 @@ InterPoll runs entirely on **GenosDB** — there are no servers to operate:
 
 **2. The graph (the data).** Communities, posts, comments, polls, votes, messages and profiles are stored as nodes in a local graph (persisted to your browser's OPFS storage). Each vote is its own signed node, so concurrent votes never overwrite each other — tallies are *derived*, not mutated.
 
-**3. The mesh (the sync).** GenosDB connects peers directly over **GenosRTC** — its peer-to-peer networking layer, built on WebRTC — using decentralised Nostr relays only for discovery (signaling), never for your data. Changes propagate peer-to-peer in real time, and across your own browser tabs instantly: a single app-wide `db.map` mirrors the graph into memory, so every view reacts live with no per-component subscriptions. The same P2P link also carries an **ephemeral real-time signal** — direct 1:1 file transfers — over a GenosRTC data channel, kept entirely separate from the stored graph.
+**3. The mesh (the sync).** GenosDB connects peers directly over **GenosRTC** — its peer-to-peer networking layer, built on WebRTC — using decentralised Nostr relays only for discovery (signaling), never for your data. Changes propagate peer-to-peer in real time, and across your own browser tabs instantly: a single app-wide `db.map` mirrors the graph into memory, so every view reacts live with no per-component subscriptions. The same P2P link also carries **ephemeral real-time signals** — typing, "viewing now" presence and direct 1:1 file transfers — multiplexed over a single GenosRTC data channel, kept entirely separate from the stored graph.
 
 **4. Roles & moderation (earned, not granted).** New identities start as guests and climb to member, then trusted, by participating — under public rules every peer can verify. Moderation is per-community via node-level ACLs: a community owner and their delegated moderators can remove content in that community only.
 
@@ -182,7 +183,8 @@ Everything is a signed GenosDB node, mirrored into memory by **one app-wide `db.
 | [`services/images.js`](src/services/images.js) | Canvas compression → base64 image nodes |
 | [`services/badges.js`](src/services/badges.js) · [`tier-watch.js`](src/services/tier-watch.js) | Karma reward tiers (animated inline-SVG badges) + reactive tier-up toast |
 | [`services/names.js`](src/services/names.js) | Live display-name cache from `user` nodes → names instead of `0x…` everywhere |
-| [`services/p2p.js`](src/services/p2p.js) | One GenosRTC `app` channel, multiplexed by message `kind`: address↔peerId roster + targeted 1:1 file transfer with progress |
+| [`services/p2p.js`](src/services/p2p.js) | The one GenosRTC `app` channel, multiplexed by message `kind`: roster (address↔peerId) + 1:1 file transfer + a generic `broadcast`/`onSignal` transport that typing & presence ride on |
+| [`services/presence.js`](src/services/presence.js) | "Viewing now" presence — a `presence` signal on the shared channel |
 | [`services/net.js`](src/services/net.js) | Live P2P peer tracking |
 
 ### How a vote works
@@ -200,7 +202,7 @@ src/
 ├─ state/      signal.js — reactive primitive · session.js — identity signals
 ├─ router/     router.js — history-API SPA router, lazy-loaded views
 ├─ ui/         base.js — html/esc helpers · shell.js — top bar · toast.js · copy.js
-├─ services/   data + identity logic + live P2P (1:1 file transfer over one channel)
+├─ services/   data + identity logic + live P2P (typing · presence · file transfer — one channel)
 ├─ views/      page modules: async (params) => HTMLElement
 ├─ utils/      markdown · format · encryption (AES) · keystore (IndexedDB)
 └─ styles/     design tokens + per-feature CSS

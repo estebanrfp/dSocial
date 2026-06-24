@@ -1,8 +1,8 @@
 // ONE GenosRTC data channel for the app's peer-to-peer ephemeral features — the same
 // lesson as the store (ONE db.map): opening several channels degrades the DB's own sync,
 // so everything shares a single `app` channel, multiplexed by message `kind`. Opened once
-// at startup. To add typing / presence later, route them through THIS channel — never
-// open a second one.
+// at startup. Roster + file transfer are built in; typing and presence ride on top as
+// generic `kind` signals (broadcast / onSignal) — never open a second channel.
 import { db } from "../db/gdb.js";
 import { activeAddress } from "./identity.js";
 
@@ -10,6 +10,8 @@ let channel = null;
 const byPeer = new Map(); // peerId -> address
 const byAddr = new Map(); // address -> peerId
 const rosterWatchers = new Set();
+const signalHandlers = new Map(); // kind -> Set<handler(data, peerId)> — typing, presence, …
+const peerLeaveWatchers = new Set(); // fn(peerId) — e.g. presence dropping a peer's view
 let onFileMsg = null; // (data, peerId, metadata) => void
 let onFileProgress = null; // (percent, peerId, metadata) => void
 
@@ -32,7 +34,9 @@ function ensureChannel() {
       byAddr.set(data.address, peerId);
       notifyRoster();
       if (isNew) announce(); // reply so a newly-heard peer learns us too
+      return;
     }
+    if (data?.kind) for (const fn of signalHandlers.get(data.kind) ?? []) fn(data, peerId); // typing, presence, …
   });
   channel.on("progress", (percent, peerId, metadata) => {
     if (metadata?.kind === "file") onFileProgress?.(percent, peerId, metadata);
@@ -45,6 +49,7 @@ function ensureChannel() {
       if (byAddr.get(addr) === peerId) byAddr.delete(addr);
       notifyRoster();
     }
+    for (const fn of peerLeaveWatchers) fn(peerId); // e.g. presence drops this peer's view
   });
   setInterval(announce, 4000); // heartbeat for roster convergence
   return channel;
@@ -65,6 +70,24 @@ export const isOnline = (address) => !!address && byAddr.has(address);
 export function onRoster(fn) {
   rosterWatchers.add(fn);
   return () => rosterWatchers.delete(fn);
+}
+
+// ── Ephemeral signals: typing, presence, … (multiplexed on the same `app` channel) ──
+/** Broadcast an ephemeral signal of `kind` to every peer (never the DB; lost if no peers). */
+export function broadcast(kind, payload) {
+  try { ensureChannel().send({ kind, ...payload }); } catch { /* no peers yet */ }
+}
+/** Subscribe to one `kind` of signal; `handler(data, peerId)` fires per message. Returns unsub. */
+export function onSignal(kind, handler) {
+  let set = signalHandlers.get(kind);
+  if (!set) signalHandlers.set(kind, (set = new Set()));
+  set.add(handler);
+  return () => set.delete(handler);
+}
+/** Fire `fn(peerId)` when a peer disconnects (so presence can drop its viewers). Returns unsub. */
+export function onPeerLeave(fn) {
+  peerLeaveWatchers.add(fn);
+  return () => peerLeaveWatchers.delete(fn);
 }
 
 // ── 1:1 file transfer (chunked by the engine) ────────────────────────────────

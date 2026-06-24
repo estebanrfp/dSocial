@@ -3,10 +3,11 @@
 // `chatKey` node). A message is encrypted for the recipient AND the sender, then
 // written as an ACL-owned `dm` node; the recipient is granted `write` (to mark it
 // read) but not delete. The synced node IS the delivery. Ported from the fork.
-import { db, P2P_CHANNELS_ENABLED } from "../db/gdb.js";
+import { db } from "../db/gdb.js";
 import { TYPE } from "../db/schema.js";
 import { select, onChange } from "../db/store.js";
 import { activeAddress } from "./identity.js";
+import { broadcast, onSignal } from "./p2p.js";
 import { idbGet, idbSet } from "../utils/keystore.js";
 
 let keyPair = null;
@@ -112,50 +113,29 @@ export function listConversations() {
   return [...peers.entries()].map(([id, lastAt]) => ({ id, lastAt })).sort((a, b) => b.lastAt - a.lastAt);
 }
 
-// ── Ephemeral typing indicators (a GenosRTC data channel, never the DB) ───────
-// Mirrors the fork's chatService: one `chat-typing` room channel carries
-// { from, to, isTyping }; the receiver keeps only signals addressed to it. A single
-// module-level handler dispatches to the active conversation, so we never stack
-// listeners (channel.on has no off). Signals are best-effort — dropped if no peers.
-let typingChannel = null;
-const typingCallbacks = new Map(); // peerId -> (isTyping) => void
-
-function ensureTypingChannel() {
-  if (typingChannel) return typingChannel;
-  if (!P2P_CHANNELS_ENABLED) return null; // channels paused — see gdb.js
-  typingChannel = db.room.channel("chat-typing");
-  typingChannel.on("message", (data) => {
-    if (data?.to !== myId) return;
-    typingCallbacks.get(data.from)?.(!!data.isTyping);
-  });
-  return typingChannel;
-}
+// ── Ephemeral typing indicators (over the shared `app` GenosRTC channel, never the DB) ──
+// A `typing` signal carries { from, to, isTyping }; the receiver keeps only the ones
+// addressed to it, for the peer it's watching. Best-effort — dropped if no peers.
 
 /**
- * Subscribe to `peerId`'s typing state; `onTyping(isTyping)` fires on change. The
- * indicator **auto-hides** after 4s of silence — we never rely on a "false"
- * arriving, because the sender may navigate away mid-type and never send it (this
- * was the "X is typing forever" bug). The sender re-asserts "true" on every
- * keystroke, so it stays up while they actually type. One callback per peer (not a
- * single global), so switching threads is clean. Returns an unsubscribe.
+ * Subscribe to `peerId`'s typing state; `onTyping(isTyping)` fires on change. The indicator
+ * **auto-hides** after 4s of silence — we never rely on a "false" arriving, because the
+ * sender may navigate away mid-type (the "X is typing forever" bug). The sender re-asserts
+ * "true" on every keystroke, so it stays up while they actually type. Returns an unsubscribe.
  */
 export function subscribeTyping(peerId, onTyping) {
   if (!myId) myId = activeAddress();
-  ensureTypingChannel();
   let hideTimer = null;
-  typingCallbacks.set(peerId, (isTyping) => {
+  return onSignal("typing", ({ from, to, isTyping }) => {
+    if (to !== myId || from !== peerId) return;
     clearTimeout(hideTimer);
-    onTyping(isTyping);
+    onTyping(!!isTyping);
     if (isTyping) hideTimer = setTimeout(() => onTyping(false), 4000);
   });
-  return () => {
-    clearTimeout(hideTimer);
-    typingCallbacks.delete(peerId);
-  };
 }
 
 /** Tell `recipientId` whether I'm typing (ephemeral; no-op if no peers are connected). */
 export function sendTyping(recipientId, isTyping) {
   if (!myId) myId = activeAddress();
-  try { ensureTypingChannel()?.send({ from: myId, to: recipientId, isTyping: !!isTyping }); } catch { /* no peers yet */ }
+  broadcast("typing", { from: myId, to: recipientId, isTyping: !!isTyping });
 }

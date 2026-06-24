@@ -17,10 +17,13 @@ that turn the 0.3.0 feature sprint into a solid showcase.
   own `db.map`. This fixes the root cause of the "syncs but not live" regression: GenosDB's
   reactivity degrades once several `db.map` subscriptions are open at once. Reads are now
   synchronous — on a client-side database the data is already local after sync.
-- **One GenosRTC channel for P2P features.** The roster (address↔peerId) and 1:1 file
-  transfer were consolidated into a single `app` data channel ([`services/p2p.js`](src/services/p2p.js)),
-  multiplexed by message `kind` — opening several channels alongside the DB's own sync
-  channel degraded realtime. Replaces `roster.js` + `filetransfer.js`.
+- **One GenosRTC channel for all P2P features.** The roster (address↔peerId), 1:1 file
+  transfer, typing and "viewing now" presence now share a single `app` data channel
+  ([`services/p2p.js`](src/services/p2p.js)), multiplexed by message `kind` — opening
+  several channels alongside the DB's own sync channel was what degraded realtime. p2p.js
+  exposes a generic `broadcast(kind)` / `onSignal(kind)` transport that typing (`chat.js`)
+  and presence (`presence.js`) ride on. Replaces `roster.js` + `filetransfer.js` and the
+  separate `chat-typing` / `presence` channels (and the `P2P_CHANNELS_ENABLED` switch).
 - **Room messages show live display names.** A message byline resolves the name at render
   time (`displayNameFor(senderId)`) and re-renders on rename, instead of the abbreviated
   address that was stored on the message — so renaming a profile updates every byline live.
@@ -34,19 +37,16 @@ that turn the 0.3.0 feature sprint into a solid showcase.
   and the room vanishes from every peer's directory and joined list (a module-level `removed`
   listener prunes the local vault globally). Peers' own messages stay theirs (zero-trust):
   orphaned, not force-deleted.
+- **Typing indicators & "viewing now" presence (revived).** A DM shows an animated
+  "… is typing" (auto-clearing after 4s idle / on send); a post shows which other connected
+  peers are viewing it right now (clears on leave). Both are ephemeral signals on the shared
+  `app` channel — never the database — folded in via p2p.js's `broadcast`/`onSignal`.
 
 ### Removed
 
 - **Cursor pagination / infinite scroll.** Superseded by the reactive store: GenosDB is
   client-side, so once data has synced it is already local — the feed derives synchronously
   and stays live (new posts, deletes, scores) without paging.
-
-### Paused
-
-- **Typing indicators and "viewing now" presence** are temporarily paused (behind
-  `P2P_CHANNELS_ENABLED`) while their separate GenosRTC channels are folded into the single
-  `app` channel — the same consolidation file transfer already received. They return as
-  `kind`-multiplexed signals on that one channel.
 
 ### Fixed
 
