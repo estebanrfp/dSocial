@@ -4,9 +4,12 @@
 import {
   createRoom,
   joinRoom,
+  joinPublicRoom,
   sendRoomMessage,
   subscribeRoomMessages,
   listJoinedRooms,
+  listPublicRooms,
+  countRoomMembers,
   subscribeRooms,
   leaveRoom,
   roomInviteToken,
@@ -55,16 +58,28 @@ export default async () => {
   let activeRoom = null;
 
   const renderRooms = async () => {
-    const rooms = await listJoinedRooms();
-    roomList.innerHTML = rooms.length
-      ? rooms
+    const joined = await listJoinedRooms();
+    const joinedIds = new Set(joined.map((r) => r.id));
+    const discover = listPublicRooms().filter((r) => !joinedIds.has(r.id)); // public rooms I'm not in
+    const joinedHtml = joined
+      .map(
+        (r) =>
+          `<li><button class="conv room ${r.id === activeRoom ? "active" : ""}" data-room="${esc(r.id)}">
+            <span class="conv-addr">${esc(r.name)}</span><span class="room-count">${r.memberCount}&nbsp;members</span></button></li>`,
+      )
+      .join("");
+    const discoverHtml = discover.length
+      ? `<li class="conv-section muted">Discover</li>` +
+        discover
           .map(
             (r) =>
-              `<li><button class="conv room ${r.id === activeRoom ? "active" : ""}" data-room="${esc(r.id)}">
-                <span class="conv-addr">${esc(r.name)}</span><span class="room-count">${r.memberCount}&nbsp;members</span></button></li>`,
+              `<li><button class="conv room room-public" data-join-public="${esc(r.id)}" title="${esc(r.description || "Public room")}">
+                <span class="conv-addr">🌐 ${esc(r.name)}</span><span class="room-count">${r.memberCount}&nbsp;members · Join</span></button></li>`,
           )
           .join("")
-      : `<li class="conv-empty muted">No rooms yet — create or join one.</li>`;
+      : "";
+    roomList.innerHTML =
+      joined.length || discover.length ? joinedHtml + discoverHtml : `<li class="conv-empty muted">No rooms yet — create or join one.</li>`;
   };
 
   const openRoom = async (roomId) => {
@@ -140,16 +155,23 @@ export default async () => {
       <form class="room-form" data-newform>
         <input class="input" name="name" placeholder="Room name" required autocomplete="off" />
         <input class="input" name="description" placeholder="Description (optional)" autocomplete="off" />
-        <input class="input" name="password" type="password" placeholder="Password (optional → invite-only)" />
+        <input class="input" name="password" type="password" placeholder="Password (optional → invite-only)" data-pw />
+        <label class="room-public-toggle"><input type="checkbox" name="isPublic" data-public /> Public — anyone can discover &amp; join</label>
         <div class="row gap"><button class="btn btn-primary btn-sm" type="submit">Create</button>
           <button class="btn btn-ghost btn-sm" type="button" data-cancel>Cancel</button></div>
       </form>`;
     panel.querySelector("[data-cancel]").addEventListener("click", closePanel);
+    // Public rooms have no password — the key derives from the public id.
+    const pwInput = panel.querySelector("[data-pw]");
+    panel.querySelector("[data-public]").addEventListener("change", (e) => {
+      pwInput.disabled = e.target.checked;
+      if (e.target.checked) pwInput.value = "";
+    });
     panel.querySelector("[data-newform]").addEventListener("submit", async (e) => {
       e.preventDefault();
       const f = e.target.elements;
       try {
-        const { room, inviteToken } = await createRoom(f.name.value.trim(), f.description.value.trim(), f.password.value);
+        const { room, inviteToken } = await createRoom(f.name.value.trim(), f.description.value.trim(), f.password.value, f.isPublic.checked);
         closePanel();
         await renderRooms();
         if (inviteToken) window.prompt("Room created! Share this invite:", `${room.id}#${inviteToken}`);
@@ -188,13 +210,30 @@ export default async () => {
 
   el.querySelector('[data-act="new"]').addEventListener("click", showNewPanel);
   el.querySelector('[data-act="join"]').addEventListener("click", showJoinPanel);
-  roomList.addEventListener("click", (e) => {
+  roomList.addEventListener("click", async (e) => {
+    const joinBtn = e.target.closest("[data-join-public]");
+    if (joinBtn) {
+      try {
+        const room = await joinPublicRoom(joinBtn.dataset.joinPublic);
+        await renderRooms();
+        openRoom(room.id);
+      } catch (err) {
+        alert(err.message);
+      }
+      return;
+    }
     const btn = e.target.closest("[data-room]");
     if (btn) openRoom(btn.dataset.room);
   });
 
+  // Keep the open thread's member count live too — renderRooms only refreshes the list.
+  const refreshActiveCount = () => {
+    if (!activeRoom) return;
+    const sub = threadBox.querySelector(".room-sub");
+    if (sub) sub.textContent = `${countRoomMembers(activeRoom)} members`;
+  };
   await renderRooms();
-  const unsubRooms = await subscribeRooms(renderRooms);
+  const unsubRooms = await subscribeRooms(() => { renderRooms(); refreshActiveCount(); });
 
   el._cleanup = () => {
     unsubThread?.();

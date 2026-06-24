@@ -25,16 +25,30 @@ const storeRoomKey = (entry) => writeVault([...readVault().filter((e) => e.id !=
 const getRoomKey = (id) => readVault().find((e) => e.id === id);
 const removeRoomKey = (id) => writeVault(readVault().filter((e) => e.id !== id));
 
-/** Create an encrypted room. Returns the room + an invite token (the url-safe AES key). */
-export async function createRoom(name, description = "", password = "") {
+/** Create a room. `isPublic` rooms are discoverable (clear name, key derived from the
+ *  public id, one-click join); otherwise invite-only (encrypted meta, secret key).
+ *  Returns the room + an invite token (empty for public/password rooms). */
+export async function createRoom(name, description = "", password = "", isPublic = false) {
   const creatorId = activeAddress();
   if (!creatorId) throw new Error("No active identity");
   const roomId = `room-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  const createdAt = Date.now();
+
+  if (isPublic) {
+    // Discoverable: name/description live in clear so the directory can list it, and the
+    // AES key DERIVES from the (public) roomId so any peer can join + decrypt. Encryption
+    // here is transport hygiene, not secrecy — a public room is open by design.
+    const aesKey = await aes.deriveKeyFromPassword(roomId, salt(roomId));
+    await db.sm.acls.set({ type: TYPE.chatRoom, id: roomId, isPublic: true, name, description, encryptionHint: "Public", createdAt, creatorId }, roomId);
+    await db.sm.acls.set({ type: TYPE.roomMember, roomId, member: creatorId, joinedAt: createdAt }, `roomMember:${roomId}:${creatorId}`);
+    storeRoomKey({ id: roomId, key: await aes.exportKey(aesKey), method: "public", label: name, joinedAt: createdAt });
+    return { room: { id: roomId, name, description, creatorId, encryptionHint: "Public", createdAt, memberCount: 1 }, inviteToken: "" };
+  }
+
   const method = password ? "password" : "invite";
   const hint = password ? "Password-protected" : "Invite-only";
   const aesKey = password ? await aes.deriveKeyFromPassword(password, salt(roomId)) : await aes.generateKey();
   const encryptedMeta = await aes.encrypt(JSON.stringify({ name, description, creatorId }), aesKey);
-  const createdAt = Date.now();
   await db.sm.acls.set({ type: TYPE.chatRoom, id: roomId, isEncrypted: true, encryptionHint: hint, encryptedMeta, createdAt }, roomId);
   await db.sm.acls.set({ type: TYPE.roomMember, roomId, member: creatorId, joinedAt: createdAt }, `roomMember:${roomId}:${creatorId}`);
   storeRoomKey({ id: roomId, key: await aes.exportKey(aesKey), method, label: name, joinedAt: createdAt });
@@ -110,7 +124,11 @@ export async function listJoinedRooms() {
     let name = stored.label;
     let description = "";
     let creatorId = "";
-    if (room?.encryptedMeta) {
+    if (room?.isPublic) {
+      name = room.name;
+      description = room.description || "";
+      creatorId = room.creatorId || "";
+    } else if (room?.encryptedMeta) {
       try {
         const meta = JSON.parse(await aes.decrypt(room.encryptedMeta, await aes.importKey(stored.key)));
         ({ name, description, creatorId } = meta);
@@ -119,6 +137,32 @@ export async function listJoinedRooms() {
     out.push({ id: stored.id, name, description, creatorId, encryptionHint: room?.encryptionHint || "", createdAt: room?.createdAt || stored.joinedAt, memberCount: await countRoomMembers(stored.id) });
   }
   return out.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** Public, discoverable rooms from the store (for the directory). Sync — name is in clear. */
+export function listPublicRooms() {
+  return select((n) => n.type === TYPE.chatRoom && n.isPublic)
+    .map(({ id, value }) => ({
+      id,
+      name: value.name,
+      description: value.description || "",
+      creatorId: value.creatorId,
+      createdAt: value.createdAt || 0,
+      memberCount: countRoomMembers(id),
+      joined: hasJoined(id),
+    }))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** Join a public room in one click — the AES key derives from the public room id. */
+export async function joinPublicRoom(roomId) {
+  const room = nodeOf(roomId);
+  if (!room?.isPublic) throw new Error("Not a public room.");
+  const aesKey = await aes.deriveKeyFromPassword(roomId, salt(roomId));
+  storeRoomKey({ id: roomId, key: await aes.exportKey(aesKey), method: "public", label: room.name, joinedAt: Date.now() });
+  const me = activeAddress();
+  if (me) await db.sm.acls.set({ type: TYPE.roomMember, roomId, member: me, joinedAt: Date.now() }, `roomMember:${roomId}:${me}`);
+  return { id: roomId, name: room.name, description: room.description, creatorId: room.creatorId, encryptionHint: "Public", createdAt: room.createdAt, memberCount: countRoomMembers(roomId) };
 }
 
 /** Fire onChange on any room membership/message change (keeps the list + counts live). */
