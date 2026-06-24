@@ -149,3 +149,16 @@ export async function subscribePosts(communityId, onChange) {
   emit();
   return () => { postUnsub?.(); voteUnsub?.(); commentUnsub?.(); };
 }
+
+/**
+ * Subscribe to ONE post live (the detail view): re-emits the post with its score
+ * re-derived whenever the post node or its votes change — including from other peers.
+ * The data is already local (GenosDB synced it), so this just observes it reactively.
+ * `onChange(post|null)` — null once the post is deleted. Returns an unsubscribe.
+ */
+export async function subscribePost(postId, onChange) {
+  const emit = async () => onChange(await getPost(postId));
+  const { unsubscribe: postUnsub } = await db.get(postId, () => emit());
+  const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.postVote, postId } }, () => emit());
+  return () => { postUnsub?.(); voteUnsub?.(); };
+}

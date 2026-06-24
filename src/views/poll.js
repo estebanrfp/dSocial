@@ -2,7 +2,8 @@
 // code) or see live results (bars with %, your choice highlighted). The tally is
 // derived from signed votes and refreshes after voting.
 import { html, esc } from "../ui/base.js";
-import { loadPoll, vote, getMyVote, consumeInviteCode } from "../services/polls.js";
+import { navigate } from "../router/router.js";
+import { loadPoll, subscribePoll, vote, getMyVote, consumeInviteCode } from "../services/polls.js";
 import { timeAgo, plural } from "../utils/format.js";
 
 /** @returns {Promise<HTMLElement>} */
@@ -76,6 +77,15 @@ export default async function pollView({ pollId }) {
   };
 
   render();
+
+  // Keep the tally live — re-derived whenever anyone (any peer) votes on this poll.
+  // My own vote/selection (mine, selected) is preserved across these re-renders.
+  const unsubPoll = await subscribePoll(pollId, (p) => {
+    if (!p) return navigate(`/c/${poll.communityId}`); // deleted (by me or a moderator)
+    poll = p;
+    render();
+  });
+  el._cleanup = () => unsubPoll?.();
   return el;
 }
 

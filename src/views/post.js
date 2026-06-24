@@ -2,7 +2,7 @@
 // comment votable; scores derive from signed votes).
 import { html, esc } from "../ui/base.js";
 import { navigate } from "../router/router.js";
-import { getPost, voteOnPost, deletePost } from "../services/posts.js";
+import { getPost, subscribePost, voteOnPost, deletePost } from "../services/posts.js";
 import { subscribeComments, createComment, voteOnComment } from "../services/comments.js";
 import { renderMarkdown } from "../utils/markdown.js";
 import { timeAgo } from "../utils/format.js";
@@ -86,11 +86,8 @@ export default async function postView({ postId }) {
 
   el.querySelectorAll("[data-pvote]").forEach((b) =>
     b.addEventListener("click", async () => {
-      try {
-        await voteOnPost(postId, b.dataset.pvote);
-        const p = await getPost(postId);
-        el.querySelector("[data-score]").textContent = p.score;
-      } catch (e) { console.error(e); }
+      // The score updates reactively via subscribePost (below) — no manual re-read.
+      try { await voteOnPost(postId, b.dataset.pvote); } catch (e) { console.error(e); }
     }),
   );
 
@@ -132,11 +129,18 @@ export default async function postView({ postId }) {
     viewingEl.innerHTML = `<span class="viewing-dot"></span>${esc(who)} viewing now`;
   };
 
+  // Keep the post's vote score live — re-derived whenever anyone (any peer) votes.
+  const scoreEl = el.querySelector("[data-score]");
+  const unsubPost = await subscribePost(postId, (p) => {
+    if (!p) return navigate(`/c/${post.communityId}`); // deleted (by me or a moderator)
+    if (scoreEl) scoreEl.textContent = p.score;
+  });
   const unsubComments = await subscribeComments(postId, renderComments);
   setViewing(postId);
   const unsubPresence = onPresence(renderViewers);
   renderViewers();
   el._cleanup = () => {
+    unsubPost?.();
     unsubComments?.();
     unsubPresence?.();
     setViewing(null); // tell peers I've left this post

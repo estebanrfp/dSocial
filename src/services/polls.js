@@ -151,3 +151,16 @@ export async function subscribePolls(communityId, onChange) {
   emit();
   return () => { pollUnsub?.(); voteUnsub?.(); };
 }
+
+/**
+ * Subscribe to ONE poll live (the detail view): re-emits it with its tally re-derived
+ * whenever the poll node or any vote changes — including from other peers. The data is
+ * already local (GenosDB synced it), so this just observes it reactively.
+ * `onChange(poll|null)` — null once the poll is deleted. Returns an unsubscribe.
+ */
+export async function subscribePoll(pollId, onChange) {
+  const emit = async () => onChange(await loadPoll(pollId));
+  const { unsubscribe: pollUnsub } = await db.get(pollId, () => emit());
+  const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.vote, pollId } }, () => emit());
+  return () => { pollUnsub?.(); voteUnsub?.(); };
+}
