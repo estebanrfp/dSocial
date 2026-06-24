@@ -25,6 +25,13 @@ const storeRoomKey = (entry) => writeVault([...readVault().filter((e) => e.id !=
 const getRoomKey = (id) => readVault().find((e) => e.id === id);
 const removeRoomKey = (id) => writeVault(readVault().filter((e) => e.id !== id));
 
+// A room deleted by its owner reaches every peer as a `removed` chatRoom node. Prune it
+// from our local vault globally — even when the rooms view isn't mounted — so a deleted
+// room never lingers as a ghost entry in our list.
+onChange(({ id, action }) => {
+  if (action === "removed") removeRoomKey(id);
+}, TYPE.chatRoom);
+
 /** Create a room. `isPublic` rooms are discoverable (clear name, key derived from the
  *  public id, one-click join); otherwise invite-only (encrypted meta, secret key).
  *  Returns the room + an invite token (empty for public/password rooms). */
@@ -193,3 +200,17 @@ export async function leaveRoom(roomId) {
   if (me) await db.sm.acls.delete(`roomMember:${roomId}:${me}`).catch(() => {});
   removeRoomKey(roomId);
 }
+
+/** Delete a room you created. Removes the room node — its ACL allows only the owner, and
+ *  the synced removal makes it vanish from every peer's directory AND (via the `removed`
+ *  event) their joined list — plus your own membership + local key. Peers' own messages and
+ *  membership are theirs (zero-trust): orphaned without the room node, not force-deleted. */
+export async function deleteRoom(roomId) {
+  await db.sm.acls.delete(roomId).catch(() => {}); // ACL enforces owner-only
+  const me = activeAddress();
+  if (me) await db.sm.acls.delete(`roomMember:${roomId}:${me}`).catch(() => {});
+  removeRoomKey(roomId);
+}
+
+/** Forget a room locally (drop its key) — e.g. when its owner deleted it upstream. */
+export const forgetRoom = (roomId) => removeRoomKey(roomId);

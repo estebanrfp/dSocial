@@ -12,11 +12,15 @@ import {
   countRoomMembers,
   subscribeRooms,
   leaveRoom,
+  deleteRoom,
+  forgetRoom,
   roomInviteToken,
   parseInvite,
 } from "../services/chatrooms.js";
 import { activeAddress } from "../services/identity.js";
-import { abbr } from "../state/session.js";
+import { displayNameFor, onNameChange } from "../services/names.js";
+import { onChange as onStoreChange } from "../db/store.js";
+import { TYPE } from "../db/schema.js";
 import { timeAgo } from "../utils/format.js";
 import { esc } from "../ui/base.js";
 
@@ -55,7 +59,18 @@ export default async () => {
   const threadBox = el.querySelector("[data-thread]");
   const panel = el.querySelector("[data-panel]");
   let unsubThread = null;
+  let unsubThreadNames = null;
   let activeRoom = null;
+
+  // Close the open thread + tear down its subscriptions (shared by leave / delete / prune).
+  const closeThread = () => {
+    activeRoom = null;
+    unsubThread?.();
+    unsubThread = null;
+    unsubThreadNames?.();
+    unsubThreadNames = null;
+    threadBox.innerHTML = `<div class="chat-empty muted">Select, create, or join a room.</div>`;
+  };
 
   const renderRooms = async () => {
     const joined = await listJoinedRooms();
@@ -82,11 +97,15 @@ export default async () => {
       joined.length || discover.length ? joinedHtml + discoverHtml : `<li class="conv-empty muted">No rooms yet — create or join one.</li>`;
   };
 
-  const openRoom = async (roomId) => {
+  const openRoom = async (roomId, roomData = null) => {
     activeRoom = roomId;
     unsubThread?.();
     unsubThread = null;
-    const room = (await listJoinedRooms()).find((r) => r.id === roomId);
+    unsubThreadNames?.();
+    unsubThreadNames = null;
+    // Prefer the freshly-returned room (create/join): the store mirror lags a tick after a
+    // write, so re-deriving creatorId from it here would miss it → no Delete button.
+    const room = roomData || (await listJoinedRooms()).find((r) => r.id === roomId);
     if (!room) return;
     const isOwner = room.creatorId === me;
     threadBox.innerHTML = `
@@ -95,6 +114,7 @@ export default async () => {
         <div class="thread-actions">
           <span class="lock-badge" title="AES-256-GCM encrypted">🔒 ${esc(room.encryptionHint)}</span>
           <button class="btn btn-ghost btn-sm" data-invite>Invite</button>
+          ${isOwner ? `<button class="btn btn-ghost btn-sm" data-delete>Delete</button>` : ""}
           <button class="btn btn-ghost btn-sm" data-leave>Leave</button>
         </div>
       </header>
@@ -111,7 +131,7 @@ export default async () => {
       if (!text) return;
       input.value = "";
       try {
-        await sendRoomMessage(roomId, text, abbr(me));
+        await sendRoomMessage(roomId, text, displayNameFor(me));
       } catch (err) {
         input.value = text;
         alert(err.message);
@@ -121,26 +141,34 @@ export default async () => {
       const token = await roomInviteToken(roomId);
       window.prompt("Share this invite (paste it in Join):", token);
     });
+    threadBox.querySelector("[data-delete]")?.addEventListener("click", async () => {
+      if (!window.confirm("Delete this room for everyone? This can't be undone.")) return;
+      await deleteRoom(roomId);
+      closeThread();
+      renderRooms();
+    });
     threadBox.querySelector("[data-leave]").addEventListener("click", async () => {
       if (!window.confirm("Leave this room? You'll lose its key.")) return;
       await leaveRoom(roomId);
-      activeRoom = null;
-      unsubThread?.();
-      unsubThread = null;
-      threadBox.innerHTML = `<div class="chat-empty muted">Select, create, or join a room.</div>`;
+      closeThread();
       renderRooms();
     });
-    unsubThread = await subscribeRoomMessages(roomId, (msgs) => {
-      msgBox.innerHTML = msgs
+    // Names resolve at render time (not stored on the message), so a profile rename updates
+    // every byline live — the feed's pattern. onNameChange re-renders the open thread.
+    let lastMsgs = [];
+    const renderMessages = () => {
+      msgBox.innerHTML = lastMsgs
         .map(
           (m) =>
             `<div class="msg ${m.mine ? "mine" : "theirs"}">${
-              m.mine ? "" : `<span class="msg-sender">${esc(m.senderName || abbr(m.senderId))}</span>`
+              m.mine ? "" : `<span class="msg-sender">${esc(displayNameFor(m.senderId))}</span>`
             }<p>${esc(m.text)}</p><time>${timeAgo(m.timestamp)}</time></div>`,
         )
         .join("");
       msgBox.scrollTop = msgBox.scrollHeight;
-    });
+    };
+    unsubThread = await subscribeRoomMessages(roomId, (msgs) => { lastMsgs = msgs; renderMessages(); });
+    unsubThreadNames = onNameChange(renderMessages);
     renderRooms();
   };
 
@@ -175,7 +203,7 @@ export default async () => {
         closePanel();
         await renderRooms();
         if (inviteToken) window.prompt("Room created! Share this invite:", `${room.id}#${inviteToken}`);
-        openRoom(room.id);
+        openRoom(room.id, room);
       } catch (err) {
         alert(err.message);
       }
@@ -201,7 +229,7 @@ export default async () => {
         const room = await joinRoom(roomId, token || f.password.value, method);
         closePanel();
         await renderRooms();
-        openRoom(room.id);
+        openRoom(room.id, room);
       } catch (err) {
         alert(err.message);
       }
@@ -216,7 +244,7 @@ export default async () => {
       try {
         const room = await joinPublicRoom(joinBtn.dataset.joinPublic);
         await renderRooms();
-        openRoom(room.id);
+        openRoom(room.id, room);
       } catch (err) {
         alert(err.message);
       }
@@ -232,12 +260,22 @@ export default async () => {
     const sub = threadBox.querySelector(".room-sub");
     if (sub) sub.textContent = `${countRoomMembers(activeRoom)} members`;
   };
+  // A room deleted by its owner reaches every peer as a `removed` chatRoom node — drop it
+  // from our local vault so it leaves our list too, and close it if we had it open.
+  const unsubDeletes = onStoreChange(({ id, action }) => {
+    if (action !== "removed") return;
+    forgetRoom(id); // idempotent: no-op if we hadn't joined
+    if (activeRoom === id) closeThread();
+    renderRooms();
+  }, TYPE.chatRoom);
   await renderRooms();
   const unsubRooms = await subscribeRooms(() => { renderRooms(); refreshActiveCount(); });
 
   el._cleanup = () => {
     unsubThread?.();
+    unsubThreadNames?.();
     unsubRooms?.();
+    unsubDeletes?.();
   };
   return el;
 };
