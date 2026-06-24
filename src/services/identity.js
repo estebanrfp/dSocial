@@ -1,8 +1,10 @@
-// Identity & profile via the GenosDB Security Manager. The SM owns key material,
-// signs every operation and drives RBAC; this module wraps its onboarding/login
-// calls and the per-identity `user` profile node (ACL-owned by the address).
+// Identity & profile via the GenosDB Security Manager. The SM owns key material, signs
+// every operation and drives RBAC; this module wraps its onboarding/login calls and the
+// per-identity `user` profile node (ACL-owned by the address). Derived reads (stats,
+// karma) come synchronously from the in-memory store (the app's single db.map).
 import { db } from "../db/gdb.js";
 import { TYPE, isAuthenticVote } from "../db/schema.js";
+import { select, value as nodeOf } from "../db/store.js";
 
 // ── Onboarding / session ─────────────────────────────────────────────────────
 
@@ -28,20 +30,20 @@ export const logout = () => db.sm.clearSecurity();
 /** Active Ethereum address, or null. */
 export const activeAddress = () => db.sm.getActiveEthAddress?.() ?? null;
 
-// ── Profile (user:<address> node) ────────────────────────────────────────────
+// ── Profile (the `user` node, id = address) ──────────────────────────────────
 
-/** Read a user's profile node by address, or null. */
-export async function getProfile(address) {
+/** Read a user's profile node by address, or null (sync, from the store). */
+export function getProfile(address) {
   if (!address) return null;
-  const { result } = await db.get(address);
-  return result?.value?.type === TYPE.user ? result.value : null;
+  const v = nodeOf(address);
+  return v?.type === TYPE.user ? v : null;
 }
 
 /** Ensure the active identity has a profile node; create a minimal one if missing. */
 export async function ensureProfile() {
   const address = activeAddress();
   if (!address) return null;
-  const existing = await getProfile(address);
+  const existing = getProfile(address);
   if (existing) return existing;
   const profile = { type: TYPE.user, address, displayName: "", bio: "", createdAt: Date.now() };
   await db.sm.acls.set(profile, address);
@@ -52,64 +54,50 @@ export async function ensureProfile() {
 export async function updateProfile(patch) {
   const address = activeAddress();
   if (!address) throw new Error("No active identity");
-  const current = (await getProfile(address)) ?? { type: TYPE.user, address, createdAt: Date.now() };
+  const current = getProfile(address) ?? { type: TYPE.user, address, createdAt: Date.now() };
   const next = { ...current, ...patch, type: TYPE.user, address };
   await db.sm.acls.set(next, address);
   return next;
 }
 
-/** Aggregate public stats for a profile (all derived, never stored). */
-export async function getUserStats(userId) {
+/** Aggregate public stats for a profile — all derived from the store, never stored (sync). */
+export function getUserStats(userId) {
   if (!userId) return { posts: 0, comments: 0, communities: 0, karma: 0 };
-  const [posts, comments, memberships, karma] = await Promise.all([
-    db.map({ query: { type: TYPE.post, authorId: userId } }),
-    db.map({ query: { type: TYPE.comment, authorId: userId } }),
-    db.map({ query: { type: TYPE.membership, member: userId } }),
-    getKarma(userId),
-  ]);
   return {
-    posts: posts.results.length,
-    comments: comments.results.length,
-    communities: memberships.results.length,
-    karma,
+    posts: select((v) => v.type === TYPE.post && v.authorId === userId).length,
+    comments: select((v) => v.type === TYPE.comment && v.authorId === userId).length,
+    communities: select((v) => v.type === TYPE.membership && v.member === userId).length,
+    karma: getKarma(userId),
   };
 }
 
-/** A user's posts (newest first) for their profile page. */
-export async function getUserPosts(userId) {
+/** A user's posts (newest first) for their profile page (sync). */
+export function getUserPosts(userId) {
   if (!userId) return [];
-  const { results } = await db.map({ query: { type: TYPE.post, authorId: userId } });
-  return results.map((n) => n.value).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+  return select((v) => v.type === TYPE.post && v.authorId === userId)
+    .map(({ value }) => value)
+    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
 }
 
 /**
- * Derive a user's karma: net (up − down) across every vote on their posts and
- * comments. Two-step join (votes don't carry the author): find the user's content
- * ids, then aggregate the votes referencing them. Never written onto a node.
+ * Derive a user's karma: net (up − down) across every authentic vote on their posts and
+ * comments, from the in-memory store. Self-votes don't count (reputation comes from
+ * others). Sync — never written onto a node.
  */
-export async function getKarma(userId) {
+export function getKarma(userId) {
   if (!userId) return 0;
-  const [posts, comments] = await Promise.all([
-    db.map({ query: { type: TYPE.post, authorId: userId } }),
-    db.map({ query: { type: TYPE.comment, authorId: userId } }),
-  ]);
-  const postIds = posts.results.map((n) => n.value.id);
-  const commentIds = comments.results.map((n) => n.value.id);
-  if (!postIds.length && !commentIds.length) return 0;
-
-  const queries = [];
-  if (postIds.length) queries.push(db.map({ query: { type: TYPE.postVote, postId: { $in: postIds } } }));
-  if (commentIds.length) queries.push(db.map({ query: { type: TYPE.commentVote, commentId: { $in: commentIds } } }));
+  const postIds = new Set(select((v) => v.type === TYPE.post && v.authorId === userId).map(({ value }) => value.id));
+  const commentIds = new Set(select((v) => v.type === TYPE.comment && v.authorId === userId).map(({ value }) => value.id));
+  if (!postIds.size && !commentIds.size) return 0;
 
   let karma = 0;
-  for (const { results } of await Promise.all(queries)) {
-    // Only authentic votes (verified signer === voter) move karma — unforgeable —
-    // and reputation must come from OTHERS, so self-votes don't count.
-    for (const n of results) {
-      if (!isAuthenticVote(n.value)) continue;
-      if (n.value.voter === userId) continue;
-      karma += n.value.direction === "up" ? 1 : -1;
-    }
+  for (const { value } of select((v) => v.type === TYPE.postVote && postIds.has(v.postId))) {
+    if (!isAuthenticVote(value) || value.voter === userId) continue; // unforgeable; no self-votes
+    karma += value.direction === "up" ? 1 : -1;
+  }
+  for (const { value } of select((v) => v.type === TYPE.commentVote && commentIds.has(v.commentId))) {
+    if (!isAuthenticVote(value) || value.voter === userId) continue;
+    karma += value.direction === "up" ? 1 : -1;
   }
   return karma;
 }

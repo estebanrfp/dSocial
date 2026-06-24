@@ -1,8 +1,10 @@
 // Communities. Created/owned via node ACLs (creator = owner); membership and the
-// moderator list are signed nodes; member counts are derived from membership
-// nodes. Ported to vanilla from the fork's CommunityService.
+// moderator list are signed nodes; member counts derive from membership nodes. Reads
+// derive synchronously from the in-memory store (the app's single db.map). Ported to
+// vanilla from the fork's CommunityService.
 import { db } from "../db/gdb.js";
 import { TYPE, communityId, membershipId } from "../db/schema.js";
+import { select, value as nodeOf, onChange } from "../db/store.js";
 import { activeAddress } from "./identity.js";
 
 /** Map a stored community node + derived count into the UI shape. */
@@ -22,10 +24,9 @@ function build(value, memberCount) {
   };
 }
 
-/** Count a community's members from its signed membership nodes. */
-export async function countMembers(id) {
-  const { results } = await db.map({ query: { type: TYPE.membership, communityId: id } });
-  return results.length;
+/** Count a community's members from its signed membership nodes (sync, from the store). */
+export function countMembers(id) {
+  return select((n) => n.type === TYPE.membership && n.communityId === id).length;
 }
 
 /** Create a public community: the creator becomes ACL owner and first member. */
@@ -54,11 +55,10 @@ export async function createCommunity({ name, displayName, description, rules })
   return build(record, 1);
 }
 
-/** Read one community with its derived member count, or null. */
-export async function getCommunity(id) {
-  const { result } = await db.get(id);
-  if (result?.value?.type !== TYPE.community) return null;
-  return build(result.value, await countMembers(id));
+/** Read one community with its derived member count, or null (sync, from the store). */
+export function getCommunity(id) {
+  const v = nodeOf(id);
+  return v?.type === TYPE.community ? build(v, countMembers(id)) : null;
 }
 
 /** Join a community (idempotent per identity — deterministic membership id). */
@@ -71,69 +71,45 @@ export async function joinCommunity(id) {
   );
 }
 
-/** Whether the active identity is a member of a community. */
-export async function isMember(id) {
+/** Whether the active identity is a member of a community (sync, from the store). */
+export function isMember(id) {
   const me = activeAddress();
   if (!me) return false;
-  const { result } = await db.get(membershipId(id, me));
-  return result?.value?.type === TYPE.membership;
+  return nodeOf(membershipId(id, me))?.type === TYPE.membership;
 }
 
 /** Add a moderator (owner-only, enforced by the ACL middleware). */
 export async function addModerator(id, address) {
-  const { result } = await db.get(id);
-  if (!result?.value) throw new Error("Community not found");
-  const current = Array.isArray(result.value.moderators) ? result.value.moderators : [];
+  const v = nodeOf(id);
+  if (!v) throw new Error("Community not found");
+  const current = Array.isArray(v.moderators) ? v.moderators : [];
   if (current.some((m) => m.toLowerCase() === address.toLowerCase())) return;
   // acls.set replaces the whole node value — spread to preserve name/description/etc.
-  await db.sm.acls.set({ ...result.value, moderators: [...current, address] }, id);
+  await db.sm.acls.set({ ...v, moderators: [...current, address] }, id);
 }
 
 /** Remove a moderator (owner-only). */
 export async function removeModerator(id, address) {
-  const { result } = await db.get(id);
-  if (!result?.value) return;
-  const current = Array.isArray(result.value.moderators) ? result.value.moderators : [];
+  const v = nodeOf(id);
+  if (!v) return;
+  const current = Array.isArray(v.moderators) ? v.moderators : [];
   await db.sm.acls.set(
-    { ...result.value, moderators: current.filter((m) => m.toLowerCase() !== address.toLowerCase()) },
+    { ...v, moderators: current.filter((m) => m.toLowerCase() !== address.toLowerCase()) },
     id,
   );
 }
 
 /**
- * Subscribe to all communities live. `onChange(communities[])` fires on every change
- * (newest first). Watches BOTH community nodes AND membership nodes, because the member
- * count derives from memberships — without the membership watch a join only showed up on
- * reload (it never touches the community node). Mirrors the fork's subscribeToCommunitiesLive.
- * Returns an unsubscribe function.
+ * Subscribe to all communities live (newest first). Member counts derive from membership
+ * nodes, so the store fires this on any community OR membership change — a join updates
+ * the count live. No db.map of its own (the app shares one). Returns an unsubscribe.
  */
-export async function subscribeCommunities(onChange) {
-  const byId = new Map();
-  const emit = () =>
-    onChange([...byId.values()].sort((a, b) => b.createdAt - a.createdAt));
-  const refresh = async (id) => {
-    const { result } = await db.get(id);
-    if (result?.value?.type === TYPE.community) byId.set(id, build(result.value, await countMembers(id)));
-    else byId.delete(id);
-    emit();
-  };
-
-  const { results, unsubscribe: communityUnsub } = await db.map(
-    { query: { type: TYPE.community } },
-    ({ id, value, action }) => {
-      if (action === "removed") { byId.delete(id); emit(); }
-      else if (value?.type === TYPE.community) refresh(id);
-    },
+export function subscribeCommunities(onChange_) {
+  const emit = () => onChange_(
+    select((v) => v.type === TYPE.community)
+      .map(({ value }) => build(value, countMembers(value.id)))
+      .sort((a, b) => b.createdAt - a.createdAt),
   );
-  const { unsubscribe: memberUnsub } = await db.map(
-    { query: { type: TYPE.membership } },
-    ({ value }) => { const cid = value?.communityId; if (cid && byId.has(cid)) refresh(cid); },
-  );
-  for (const node of results) {
-    if (node.value?.type === TYPE.community) {
-      byId.set(node.id, build(node.value, await countMembers(node.id)));
-    }
-  }
   emit();
-  return () => { communityUnsub?.(); memberUnsub?.(); };
+  return onChange(emit, [TYPE.community, TYPE.membership]);
 }

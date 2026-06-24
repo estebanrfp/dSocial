@@ -6,6 +6,7 @@
 // another's message). Membership is signed `roomMember` nodes, so counts derive.
 import { db } from "../db/gdb.js";
 import { TYPE } from "../db/schema.js";
+import { select, value as nodeOf, onChange } from "../db/store.js";
 import { activeAddress } from "./identity.js";
 import * as aes from "../utils/encryption.js";
 
@@ -46,8 +47,7 @@ export async function createRoom(name, description = "", password = "") {
 /** Join a room by id + invite token (or password). The key is verified by decrypting meta. */
 export async function joinRoom(roomId, keyOrPassword, method = "invite") {
   const aesKey = method === "password" ? await aes.deriveKeyFromPassword(keyOrPassword, salt(roomId)) : await aes.importKeyUrl(keyOrPassword);
-  const { result } = await db.get(roomId);
-  const room = result?.value;
+  const room = nodeOf(roomId);
   if (!room?.encryptedMeta) throw new Error("Room not found — has it synced yet?");
   let meta;
   try {
@@ -74,40 +74,39 @@ export async function sendRoomMessage(roomId, text, senderName = "") {
 }
 
 /** Live, auto-decrypting subscription to a room's messages. onChange(messages[]). */
-export async function subscribeRoomMessages(roomId, onChange) {
+export async function subscribeRoomMessages(roomId, onChange_) {
   const stored = getRoomKey(roomId);
   if (!stored) throw new Error("You haven't joined this room.");
   const aesKey = await aes.importKey(stored.key);
   const me = activeAddress();
   const byId = new Map();
-  const emit = () => onChange([...byId.values()].sort((a, b) => a.timestamp - b.timestamp));
-  const handle = async ({ id, value, action }) => {
-    if (action === "removed") { byId.delete(id); emit(); return; }
-    if (value?.type !== TYPE.chatMessage || value.roomId !== roomId || !value.encryptedContent) return;
+  const emit = () => onChange_([...byId.values()].sort((a, b) => a.timestamp - b.timestamp));
+  const ingest = async (id, value) => {
+    if (!value.encryptedContent) return;
     try {
       const content = JSON.parse(await aes.decrypt(value.encryptedContent, aesKey));
       byId.set(id, { id, text: content.text, senderId: content.senderId, senderName: content.senderName, mine: content.senderId === me, timestamp: value.timestamp });
       emit();
     } catch { /* not decryptable with this key — skip */ }
   };
-  const { results, unsubscribe } = await db.map({ query: { type: TYPE.chatMessage, roomId } }, handle);
-  for (const node of results) await handle({ id: node.id, value: node.value, action: "added" });
+  for (const { id, value } of select((v) => v.type === TYPE.chatMessage && v.roomId === roomId)) await ingest(id, value);
   emit();
-  return unsubscribe;
+  return onChange(({ id, value, action }) => {
+    if (action === "removed") { if (byId.delete(id)) emit(); return; }
+    if (value?.type === TYPE.chatMessage && value.roomId === roomId) ingest(id, value);
+  }, TYPE.chatMessage);
 }
 
 /** Derive a room's member count from its signed roomMember nodes. */
-export async function countRoomMembers(roomId) {
-  const { results } = await db.map({ query: { type: TYPE.roomMember, roomId } });
-  return results.length || 1;
+export function countRoomMembers(roomId) {
+  return select((n) => n.type === TYPE.roomMember && n.roomId === roomId).length || 1;
 }
 
 /** List rooms this identity has joined (from the local key vault), newest first. */
 export async function listJoinedRooms() {
   const out = [];
   for (const stored of readVault()) {
-    const { result } = await db.get(stored.id);
-    const room = result?.value;
+    const room = nodeOf(stored.id);
     let name = stored.label;
     let description = "";
     let creatorId = "";
@@ -123,13 +122,8 @@ export async function listJoinedRooms() {
 }
 
 /** Fire onChange on any room membership/message change (keeps the list + counts live). */
-export async function subscribeRooms(onChange) {
-  const a = await db.map({ query: { type: TYPE.roomMember } }, () => onChange());
-  const b = await db.map({ query: { type: TYPE.chatRoom } }, () => onChange());
-  return () => {
-    a.unsubscribe?.();
-    b.unsubscribe?.();
-  };
+export function subscribeRooms(onChange_) {
+  return onChange(() => onChange_(), [TYPE.roomMember, TYPE.chatRoom]);
 }
 
 /** Am I a member of this room (local vault check)? */

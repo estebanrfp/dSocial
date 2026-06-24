@@ -3,8 +3,8 @@
 // so they reach any browser with a connected peer), read synchronously by the views.
 // Dynamic resolution (not denormalised onto each post like the fork), so a renamed
 // profile updates everywhere. Falls back to the abbreviated address.
-import { db } from "../db/gdb.js";
 import { TYPE } from "../db/schema.js";
+import { select, onChange } from "../db/store.js";
 import { abbr } from "../state/session.js";
 
 const names = new Map(); // address -> non-empty displayName
@@ -20,12 +20,13 @@ function cache(v) {
   if (names.get(v.address) !== prev) for (const fn of listeners) fn(v.address);
 }
 
-/** Start the live display-name cache (idempotent; call once at startup). */
-export async function startNames() {
+/** Start the live display-name cache (idempotent; call once at startup). Reads from the
+ *  shared store — no db.map of its own. */
+export function startNames() {
   if (started) return;
   started = true;
-  const { results } = await db.map({ query: { type: TYPE.user } }, ({ value }) => cache(value));
-  for (const n of results) cache(n.value);
+  for (const { value } of select((v) => v.type === TYPE.user)) cache(value);
+  onChange(({ value }) => cache(value), TYPE.user);
 }
 
 /** Display name for an address: the profile's displayName if set, else 0x1234…abcd. */

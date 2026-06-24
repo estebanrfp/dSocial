@@ -1,8 +1,10 @@
-// Posts + up/down votes. Each post is an ACL-owned node (author = owner); each
-// vote is a deterministic, ACL-owned node so scores derive from signed votes (no
-// mutable counter to corrupt). Ported from the fork's PostService.
+// Posts + up/down votes. Each post is an ACL-owned node (author = owner); each vote is a
+// deterministic, ACL-owned node so scores derive from signed votes (no mutable counter to
+// corrupt). Reads derive synchronously from the in-memory store (the app's single db.map)
+// — no per-call db.map. Ported from the fork's PostService.
 import { db } from "../db/gdb.js";
 import { TYPE, newId, postVoteId, isAuthenticVote } from "../db/schema.js";
+import { select, value as nodeOf, onChange } from "../db/store.js";
 import { activeAddress } from "./identity.js";
 import { grantCommunityModerators } from "./moderation.js";
 import { syncPostCount } from "./roles.js";
@@ -14,18 +16,6 @@ function tally(votes) {
     else if (v.direction === "down") down++;
   }
   return { upvotes: up, downvotes: down, score: up - down };
-}
-
-async function loadVotes(postId) {
-  const { results } = await db.map({ query: { type: TYPE.postVote, postId } });
-  // Count only votes whose verified signer matches the voter (no forged voters).
-  return results
-    .filter((n) => isAuthenticVote(n.value))
-    .map((n) => ({ voter: n.value.voter, direction: n.value.direction }));
-}
-async function countComments(postId) {
-  const { results } = await db.map({ query: { type: TYPE.comment, postId } });
-  return results.length;
 }
 
 function base(value) {
@@ -40,8 +30,16 @@ function base(value) {
     editedAt: value.editedAt,
   };
 }
-async function build(value) {
-  return { ...base(value), ...tally(await loadVotes(value.id)), commentCount: await countComments(value.id) };
+
+/** Build a post's UI shape (score + comment count) from the in-memory graph (sync).
+ *  Only votes whose verified signer matches the voter count (no forged voters). */
+function build(value) {
+  const votes = select((n) => n.type === TYPE.postVote && n.postId === value.id)
+    .map((n) => n.value)
+    .filter(isAuthenticVote)
+    .map((v) => ({ voter: v.voter, direction: v.direction }));
+  const commentCount = select((n) => n.type === TYPE.comment && n.postId === value.id).length;
+  return { ...base(value), ...tally(votes), commentCount };
 }
 
 /** Create a post (author = ACL owner; grants moderators delete). */
@@ -62,8 +60,7 @@ export async function createPost({ communityId, title, content, imageId }) {
 /** Edit a post's title/content/image (owner only — enforced by ACLs). Spreads the
  *  existing node so votes/comments/ownership are untouched. */
 export async function editPost(postId, { title, content, imageId }) {
-  const { result } = await db.get(postId);
-  const v = result?.value;
+  const v = nodeOf(postId);
   if (v?.type !== TYPE.post) throw new Error("Post not found");
   const next = { ...v, title: title ?? v.title, content: content ?? "", editedAt: Date.now() };
   if (imageId !== undefined) next.imageId = imageId;
@@ -71,22 +68,20 @@ export async function editPost(postId, { title, content, imageId }) {
   return base(next);
 }
 
-/** Read one post with derived score + comment count, or null. */
-export async function getPost(postId) {
-  const { result } = await db.get(postId);
-  if (result?.value?.type !== TYPE.post) return null;
-  return build(result.value);
+/** Read one post with derived score + comment count, or null (sync, from the store). */
+export function getPost(postId) {
+  const v = nodeOf(postId);
+  return v?.type === TYPE.post ? build(v) : null;
 }
 
 /**
  * Delete a post (owner or delegated moderator, enforced by ACLs). When the author
- * deletes their own post, re-derive their postCount so dropping below the
- * threshold demotes trusted→member (only the owner can write their own user node).
+ * deletes their own post, re-derive their postCount so dropping below the threshold
+ * demotes trusted→member (only the owner can write their own user node).
  */
 export async function deletePost(postId) {
   const me = activeAddress();
-  const { result } = await db.get(postId);
-  const authorId = result?.value?.authorId;
+  const authorId = nodeOf(postId)?.authorId;
   await db.sm.acls.delete(postId);
   if (me && me === authorId) syncPostCount(me).catch(() => {});
 }
@@ -107,58 +102,33 @@ export async function removePostVote(postId) {
   if (voter) await db.sm.acls.delete(postVoteId(postId, voter));
 }
 
-/** The active identity's vote direction on a post ('up'|'down'|null). */
-export async function myPostVote(postId) {
+/** The active identity's vote direction on a post ('up'|'down'|null) (sync). */
+export function myPostVote(postId) {
   const voter = activeAddress();
   if (!voter) return null;
-  const { result } = await db.get(postVoteId(postId, voter));
-  return result?.value?.type === TYPE.postVote ? result.value.direction : null;
+  const v = nodeOf(postVoteId(postId, voter));
+  return v?.type === TYPE.postVote ? v.direction : null;
 }
 
 /**
- * Subscribe to a community's posts live, with scores/comment counts re-derived
- * when votes or comments change. `onChange(posts[])` newest first. Returns unsub.
+ * Subscribe to a community's posts live (newest first). Scores/comment counts are
+ * re-derived from the in-memory store on any post/vote/comment change — no db.map of its
+ * own (the app shares one). `onChange(posts[])`. Returns an unsubscribe.
  */
-export async function subscribePosts(communityId, onChange) {
-  const byId = new Map();
-  const emit = () => onChange([...byId.values()].sort((a, b) => b.createdAt - a.createdAt));
-  const refresh = async (id) => {
-    const p = await getPost(id);
-    if (p) byId.set(id, p);
-    else byId.delete(id);
-    emit();
-  };
-
-  const { results, unsubscribe: postUnsub } = await db.map(
-    { query: { type: TYPE.post, communityId } },
-    ({ id, value, action }) => {
-      if (action === "removed") { byId.delete(id); emit(); }
-      else if (value?.type === TYPE.post) refresh(id);
-    },
+export function subscribePosts(communityId, onChange_) {
+  const emit = () => onChange_(
+    select((v) => v.type === TYPE.post && v.communityId === communityId)
+      .map(({ value }) => build(value))
+      .sort((a, b) => b.createdAt - a.createdAt),
   );
-  const onRelated = ({ value }) => {
-    const pid = value?.postId;
-    if (pid && byId.has(pid)) refresh(pid);
-  };
-  const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.postVote } }, onRelated);
-  const { unsubscribe: commentUnsub } = await db.map({ query: { type: TYPE.comment } }, onRelated);
-
-  for (const node of results) {
-    if (node.value?.type === TYPE.post) byId.set(node.id, await build(node.value));
-  }
-  emit();
-  return () => { postUnsub?.(); voteUnsub?.(); commentUnsub?.(); };
+  emit(); // initial — the data is already local
+  return onChange(emit, [TYPE.post, TYPE.postVote, TYPE.comment]);
 }
 
-/**
- * Subscribe to ONE post live (the detail view): re-emits the post with its score
- * re-derived whenever the post node or its votes change — including from other peers.
- * The data is already local (GenosDB synced it), so this just observes it reactively.
- * `onChange(post|null)` — null once the post is deleted. Returns an unsubscribe.
- */
-export async function subscribePost(postId, onChange) {
-  const emit = async () => onChange(await getPost(postId));
-  const { unsubscribe: postUnsub } = await db.get(postId, () => emit());
-  const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.postVote, postId } }, () => emit());
-  return () => { postUnsub?.(); voteUnsub?.(); };
+/** Subscribe to ONE post live (the detail view). `onChange(post|null)` — null once the
+ *  post is deleted. Returns an unsubscribe. */
+export function subscribePost(postId, onChange_) {
+  const emit = () => onChange_(getPost(postId));
+  emit();
+  return onChange(emit, [TYPE.post, TYPE.postVote, TYPE.comment]);
 }

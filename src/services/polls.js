@@ -1,9 +1,11 @@
-// Polls + native voting. Each poll is an ACL-owned node; each vote is its own
-// signed, deterministically-id'd node (`pollId:voter`), so tallies derive from
-// signed votes (one vote per identity, re-voting overwrites). Private polls gate
-// voting behind single-use invite codes. Ported from the fork's PollService.
+// Polls + native voting. Each poll is an ACL-owned node; each vote is its own signed,
+// deterministically-id'd node (`pollId:voter`), so tallies derive from signed votes (one
+// vote per identity, re-voting overwrites). Private polls gate voting behind single-use
+// invite codes. Reads derive synchronously from the in-memory store (the app's single
+// db.map). Ported from the fork's PollService.
 import { db } from "../db/gdb.js";
 import { TYPE, newId, voteId, isAuthenticVote } from "../db/schema.js";
+import { select, value as nodeOf, onChange } from "../db/store.js";
 import { activeAddress } from "./identity.js";
 import { grantCommunityModerators } from "./moderation.js";
 
@@ -11,12 +13,10 @@ const DAY_MS = 86400000;
 const randCode = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 12);
 
-/** Aggregate a poll's signed vote nodes into per-option tallies. */
-async function buildPoll(pollId, record) {
-  const { results } = await db.map({ query: { type: TYPE.vote, pollId } });
+/** Aggregate a poll's signed vote nodes into per-option tallies (sync, from the store). */
+function buildPoll(pollId, record) {
   const votersByOption = new Map();
-  for (const node of results) {
-    const v = node.value;
+  for (const { value: v } of select((n) => n.type === TYPE.vote && n.pollId === pollId)) {
     if (!isAuthenticVote(v) || !Array.isArray(v.optionIds)) continue; // signer must match voter
     for (const optId of v.optionIds) {
       const arr = votersByOption.get(optId) ?? [];
@@ -72,27 +72,25 @@ export async function vote(pollId, optionIds) {
   );
 }
 
-/** Whether the active identity has voted on a poll. */
-export async function hasVoted(pollId) {
+/** Whether the active identity has voted on a poll (sync). */
+export function hasVoted(pollId) {
   const voter = activeAddress();
   if (!voter) return false;
-  const { result } = await db.get(voteId(pollId, voter));
-  return result?.value?.type === TYPE.vote;
+  return nodeOf(voteId(pollId, voter))?.type === TYPE.vote;
 }
 
-/** The option ids the active identity voted for, or []. */
-export async function getMyVote(pollId) {
+/** The option ids the active identity voted for, or [] (sync). */
+export function getMyVote(pollId) {
   const voter = activeAddress();
   if (!voter) return [];
-  const { result } = await db.get(voteId(pollId, voter));
-  return result?.value?.type === TYPE.vote ? (result.value.optionIds ?? []) : [];
+  const v = nodeOf(voteId(pollId, voter));
+  return v?.type === TYPE.vote ? (v.optionIds ?? []) : [];
 }
 
-/** Load one poll with its derived tally, or null. */
-export async function loadPoll(pollId) {
-  const { result } = await db.get(pollId);
-  if (result?.value?.type !== TYPE.poll) return null;
-  return buildPoll(pollId, result.value);
+/** Load one poll with its derived tally, or null (sync, from the store). */
+export function loadPoll(pollId) {
+  const v = nodeOf(pollId);
+  return v?.type === TYPE.poll ? buildPoll(pollId, v) : null;
 }
 
 /** Delete a poll (owner or delegated moderator). */
@@ -100,10 +98,9 @@ export const deletePoll = (pollId) => db.sm.acls.delete(pollId);
 
 // ── Private-poll invite codes ────────────────────────────────────────────────
 
-/** Unused invite codes for a poll. */
-export async function getInviteCodes(pollId) {
-  const { results } = await db.map({ query: { type: "inviteCode", pollId } });
-  return results.filter((n) => !n.value.usedBy).map((n) => n.value.code);
+/** Unused invite codes for a poll (sync). */
+export function getInviteCodes(pollId) {
+  return select((v) => v.type === "inviteCode" && v.pollId === pollId && !v.usedBy).map((x) => x.value.code);
 }
 
 /** Claim a single-use code for the active voter. Returns true if valid/available. */
@@ -111,56 +108,28 @@ export async function consumeInviteCode(pollId, code) {
   const voter = activeAddress();
   if (!voter) return false;
   const id = `invite:${pollId}:${code}`;
-  const { result } = await db.get(id);
-  const node = result?.value;
+  const node = nodeOf(id);
   if (!node) return false;
   if (node.usedBy && node.usedBy !== voter) return false;
   await db.put({ ...node, usedBy: voter }, id);
   return true;
 }
 
-/**
- * Subscribe to a community's polls live, with tallies re-derived when votes
- * change. `onChange(polls[])` newest first. Returns an unsubscribe function.
- */
-export async function subscribePolls(communityId, onChange) {
-  const byId = new Map();
-  const emit = () => onChange([...byId.values()].sort((a, b) => b.createdAt - a.createdAt));
-  const refresh = async (id) => {
-    const p = await loadPoll(id);
-    if (p) byId.set(id, p);
-    else byId.delete(id);
-    emit();
-  };
-  const { results, unsubscribe: pollUnsub } = await db.map(
-    { query: { type: TYPE.poll, communityId } },
-    ({ id, value, action }) => {
-      if (action === "removed") { byId.delete(id); emit(); }
-      else if (value?.type === TYPE.poll) refresh(id);
-    },
+/** Subscribe to a community's polls live (newest first). Tallies re-derive from the store
+ *  on any poll/vote change. No db.map of its own. Returns an unsubscribe. */
+export function subscribePolls(communityId, onChange_) {
+  const emit = () => onChange_(
+    select((v) => v.type === TYPE.poll && v.communityId === communityId)
+      .map(({ id, value }) => buildPoll(id, value))
+      .sort((a, b) => b.createdAt - a.createdAt),
   );
-  const onVote = ({ value }) => {
-    const pid = value?.pollId;
-    if (pid && byId.has(pid)) refresh(pid);
-  };
-  const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.vote } }, onVote);
-
-  for (const node of results) {
-    if (node.value?.type === TYPE.poll) byId.set(node.id, await buildPoll(node.id, node.value));
-  }
   emit();
-  return () => { pollUnsub?.(); voteUnsub?.(); };
+  return onChange(emit, [TYPE.poll, TYPE.vote]);
 }
 
-/**
- * Subscribe to ONE poll live (the detail view): re-emits it with its tally re-derived
- * whenever the poll node or any vote changes — including from other peers. The data is
- * already local (GenosDB synced it), so this just observes it reactively.
- * `onChange(poll|null)` — null once the poll is deleted. Returns an unsubscribe.
- */
-export async function subscribePoll(pollId, onChange) {
-  const emit = async () => onChange(await loadPoll(pollId));
-  const { unsubscribe: pollUnsub } = await db.get(pollId, () => emit());
-  const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.vote, pollId } }, () => emit());
-  return () => { pollUnsub?.(); voteUnsub?.(); };
+/** Subscribe to ONE poll live (the detail view). onChange(poll|null). Returns unsub. */
+export function subscribePoll(pollId, onChange_) {
+  const emit = () => onChange_(loadPoll(pollId));
+  emit();
+  return onChange(emit, [TYPE.poll, TYPE.vote]);
 }

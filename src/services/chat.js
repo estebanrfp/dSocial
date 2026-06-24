@@ -5,6 +5,7 @@
 // read) but not delete. The synced node IS the delivery. Ported from the fork.
 import { db, P2P_CHANNELS_ENABLED } from "../db/gdb.js";
 import { TYPE } from "../db/schema.js";
+import { select, onChange } from "../db/store.js";
 import { activeAddress } from "./identity.js";
 import { idbGet, idbSet } from "../utils/keystore.js";
 
@@ -69,14 +70,12 @@ export async function sendMessage(recipientId, message) {
 }
 
 /** Subscribe to the conversation with `peerId`, decrypting live. onChange(messages[]). */
-export async function subscribeConversation(peerId, onChange) {
+export async function subscribeConversation(peerId, onChange_) {
   if (!keyPair) await initChat();
   const rid = roomId(myId, peerId);
   const byId = new Map();
-  const emit = () => onChange([...byId.values()].sort((a, b) => a.timestamp - b.timestamp));
-  const handle = async ({ id, value, action }) => {
-    if (action === "removed") { byId.delete(id); emit(); return; }
-    if (value?.type !== TYPE.dm || value.roomId !== rid) return;
+  const emit = () => onChange_([...byId.values()].sort((a, b) => a.timestamp - b.timestamp));
+  const ingest = async (id, value) => {
     const mine = value.senderId === myId;
     const cipher = mine ? value.encryptedForSender : value.encryptedForRecipient;
     try {
@@ -84,29 +83,28 @@ export async function subscribeConversation(peerId, onChange) {
       emit();
     } catch { /* a message from a previous keypair — skip */ }
   };
-  const { results, unsubscribe } = await db.map({ query: { type: TYPE.dm, roomId: rid } }, handle);
-  for (const node of results) await handle({ id: node.id, value: node.value, action: "added" });
+  for (const { id, value } of select((v) => v.type === TYPE.dm && v.roomId === rid)) await ingest(id, value);
   emit();
-  return unsubscribe;
+  return onChange(({ id, value, action }) => {
+    if (action === "removed") { if (byId.delete(id)) emit(); return; }
+    if (value?.type === TYPE.dm && value.roomId === rid) ingest(id, value);
+  }, TYPE.dm);
 }
 
 /** Fire onChange whenever a DM involving me is added/removed (keeps the list live). */
-export async function subscribeInbox(onChange) {
+export function subscribeInbox(onChange_) {
   if (!myId) myId = activeAddress();
-  const { unsubscribe } = await db.map({ query: { type: TYPE.dm } }, ({ value, action }) => {
-    if (action !== "added" && action !== "removed") return;
-    if (value && (value.senderId === myId || value.recipientId === myId)) onChange();
-  });
-  return unsubscribe;
+  return onChange(({ value, action }) => {
+    if (action === "removed") return onChange_(); // a dm may have been deleted
+    if (action === "added" && value && (value.senderId === myId || value.recipientId === myId)) onChange_();
+  }, TYPE.dm);
 }
 
 /** List conversation peers (from existing DMs), most recent first. */
-export async function listConversations() {
+export function listConversations() {
   if (!myId) myId = activeAddress();
-  const { results } = await db.map({ query: { type: TYPE.dm } });
   const peers = new Map();
-  for (const n of results) {
-    const v = n.value;
+  for (const { value: v } of select((n) => n.type === TYPE.dm)) {
     if (v.senderId !== myId && v.recipientId !== myId) continue;
     const peer = v.senderId === myId ? v.recipientId : v.senderId;
     if (!peers.has(peer) || v.timestamp > peers.get(peer)) peers.set(peer, v.timestamp);

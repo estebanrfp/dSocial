@@ -1,18 +1,19 @@
 // Comments + votes. Each comment is an ACL-owned node ({type:'comment', postId,
-// parentId?}); each vote is its own signed node, so scores derive from votes.
-// Ported from the fork's CommentService.
+// parentId?}); each vote is its own signed node, so scores derive from votes. Reads
+// derive synchronously from the in-memory store (the app's single db.map). Ported from
+// the fork's CommentService.
 import { db } from "../db/gdb.js";
 import { TYPE, newId, commentVoteId, isAuthenticVote } from "../db/schema.js";
+import { select, onChange } from "../db/store.js";
 import { activeAddress } from "./identity.js";
 import { grantCommunityModerators } from "./moderation.js";
 
-async function tally(commentId) {
-  const { results } = await db.map({ query: { type: TYPE.commentVote, commentId } });
+function tally(commentId) {
   let up = 0, down = 0;
-  for (const n of results) {
-    if (!isAuthenticVote(n.value)) continue; // ignore votes not signed by the voter
-    if (n.value.direction === "up") up++;
-    else if (n.value.direction === "down") down++;
+  for (const { value } of select((n) => n.type === TYPE.commentVote && n.commentId === commentId)) {
+    if (!isAuthenticVote(value)) continue; // ignore votes not signed by the voter
+    if (value.direction === "up") up++;
+    else if (value.direction === "down") down++;
   }
   return { upvotes: up, downvotes: down, score: up - down };
 }
@@ -28,8 +29,8 @@ function base(value) {
     createdAt: value.createdAt ?? 0,
   };
 }
-async function build(value) {
-  return { ...base(value), ...(await tally(value.id)) };
+function build(value) {
+  return { ...base(value), ...tally(value.id) };
 }
 
 /** Create a comment (author = ACL owner; grants moderators delete). */
@@ -60,34 +61,15 @@ export async function voteOnComment(commentId, direction) {
 export const deleteComment = (commentId) => db.sm.acls.delete(commentId);
 
 /**
- * Subscribe to a post's comments live, with scores re-derived when votes change.
- * `onChange(comments[])` oldest first. Returns an unsubscribe function.
+ * Subscribe to a post's comments live (oldest first), scores re-derived from the store on
+ * any comment/vote change. No db.map of its own (the app shares one). Returns unsub.
  */
-export async function subscribeComments(postId, onChange) {
-  const byId = new Map();
-  const emit = () => onChange([...byId.values()].sort((a, b) => a.createdAt - b.createdAt));
-  const refresh = async (id) => {
-    const { result } = await db.get(id);
-    if (result?.value?.type === TYPE.comment) byId.set(id, await build(result.value));
-    else byId.delete(id);
-    emit();
-  };
-  const { results, unsubscribe: cUnsub } = await db.map(
-    { query: { type: TYPE.comment, postId } },
-    ({ id, value, action }) => {
-      if (action === "removed") { byId.delete(id); emit(); }
-      else if (value?.type === TYPE.comment) refresh(id);
-    },
+export function subscribeComments(postId, onChange_) {
+  const emit = () => onChange_(
+    select((v) => v.type === TYPE.comment && v.postId === postId)
+      .map(({ value }) => build(value))
+      .sort((a, b) => a.createdAt - b.createdAt),
   );
-  const onVote = ({ value }) => {
-    const cid = value?.commentId;
-    if (cid && byId.has(cid)) refresh(cid);
-  };
-  const { unsubscribe: vUnsub } = await db.map({ query: { type: TYPE.commentVote } }, onVote);
-
-  for (const node of results) {
-    if (node.value?.type === TYPE.comment) byId.set(node.id, await build(node.value));
-  }
   emit();
-  return () => { cUnsub?.(); vUnsub?.(); };
+  return onChange(emit, [TYPE.comment, TYPE.commentVote]);
 }

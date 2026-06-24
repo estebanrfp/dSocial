@@ -5,6 +5,7 @@
 // app — this guarantees no UI module touches `db` before it exists (a static
 // import graph can otherwise evaluate a dependent before gdb's TLA resolves).
 await import("./db/gdb.js");
+await import("./db/store.js"); // the ONE app-wide reactive db.map → live in-memory graph
 await import("./services/net.js"); // start tracking P2P peers from app start
 await import("./services/tier-watch.js"); // celebrate karma tier-ups with a toast
 (await import("./services/names.js")).startNames(); // live cache: names instead of 0x… addresses

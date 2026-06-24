@@ -46,13 +46,13 @@ export function mountShell(root) {
     if (!addr) return;
     const isSuper = SUPER_ADMINS.some((s) => s.toLowerCase() === addr.toLowerCase());
     const chip = right.querySelector("[data-rolechip]");
-    subscribeRole(addr, (role) => {
+    unsubRole = subscribeRole(addr, (role) => {
       const shown = isSuper ? "superadmin" : role;
       if (chip) {
         chip.textContent = shown;
         chip.className = `id-role role-chip role-${shown}`;
       }
-    }).then((u) => (unsubRole = u));
+    });
   };
   identity.subscribe(renderBadge);
   // Update my own id-pill the moment my profile gets (or changes) a name.
