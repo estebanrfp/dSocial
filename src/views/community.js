@@ -2,7 +2,7 @@
 // posts and polls (newest first). Scores/tallies derive from signed votes.
 import { html, esc } from "../ui/base.js";
 import { getCommunity, isMember, joinCommunity, addModerator, removeModerator } from "../services/communities.js";
-import { loadPostsPage, watchPostUpdates, getPost, voteOnPost, deletePost } from "../services/posts.js";
+import { subscribePosts, voteOnPost, deletePost } from "../services/posts.js";
 import { subscribePolls } from "../services/polls.js";
 import { stripMarkdown } from "../utils/markdown.js";
 import { timeAgo, plural } from "../utils/format.js";
@@ -96,23 +96,19 @@ export default async function community({ communityId }) {
   renderActions(member);
 
   const feed = el.querySelector("[data-feed]");
-  const postMap = new Map(); // id -> post: cursor-paginated, kept live in place
+  let posts = []; // full live list from subscribePosts (reactive, newest first)
   let polls = [];
-  let cursor = null;
-  let feedDone = false;
-  let loadingMore = false;
+  let loaded = false;
 
   const renderFeed = () => {
     const items = [
       ...polls.map((p) => ({ kind: "poll", createdAt: p.createdAt, data: p })),
-      ...[...postMap.values()].map((p) => ({ kind: "post", createdAt: p.createdAt, data: p })),
+      ...posts.map((p) => ({ kind: "post", createdAt: p.createdAt, data: p })),
     ].sort((a, b) => b.createdAt - a.createdAt);
 
-    if (!items.length && feedDone) { feed.innerHTML = html`<div class="empty"><p>Nothing here yet.</p></div>`; return; }
+    if (!items.length) { feed.innerHTML = loaded ? html`<div class="empty"><p>Nothing here yet.</p></div>` : html`<p class="muted">Loading…</p>`; return; }
     const mod = canModerate();
-    feed.innerHTML =
-      items.map((it) => (it.kind === "poll" ? pollCard(it.data) : postCard(it.data, mod, me))).join("") +
-      (feedDone ? "" : html`<div class="feed-more" data-sentinel aria-hidden="true"><span class="spinner"></span></div>`);
+    feed.innerHTML = items.map((it) => (it.kind === "poll" ? pollCard(it.data) : postCard(it.data, mod, me))).join("");
     feed.querySelectorAll("[data-vote]").forEach((btn) =>
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
@@ -128,55 +124,18 @@ export default async function community({ communityId }) {
         try { await deletePost(btn.dataset.delPost); } catch (err) { alert("Delete denied: " + err.message); }
       }),
     );
-    const sentinel = feed.querySelector("[data-sentinel]");
-    if (sentinel) io.observe(sentinel);
   };
 
-  // Cursor pagination: pull one page at a time as the sentinel scrolls into view —
-  // never loads the whole community at once.
-  const loadMore = async () => {
-    if (feedDone || loadingMore) return;
-    loadingMore = true;
-    try {
-      const { posts: page, nextCursor } = await loadPostsPage(communityId, cursor);
-      for (const p of page) postMap.set(p.id, p);
-      cursor = nextCursor;
-      if (!nextCursor) feedDone = true;
-    } catch (err) {
-      console.error("Feed pagination failed:", err);
-      feedDone = true;
-    }
-    if (feedDone) io.disconnect(); // no more pages — stop observing
-    loadingMore = false;
-    renderFeed();
-  };
-  const io = new IntersectionObserver(
-    (entries) => { if (entries.some((e) => e.isIntersecting)) loadMore(); },
-    { rootMargin: "400px" },
-  );
-
-  // Keep loaded posts live (scores), AND surface brand-new posts from peers in real time
-  // (this live-new path was lost when pagination replaced subscribePosts — the "feed
-  // doesn't sync" regression). watchPostUpdates tracks seen post ids, so the initial
-  // paginated set isn't re-added and genuinely new ids surface regardless of clocks.
-  const rescore = async (pid) => {
-    if (!postMap.has(pid)) return;
-    const fresh = await getPost(pid);
-    if (fresh) postMap.set(pid, fresh);
-    else postMap.delete(pid);
-    renderFeed();
-  };
-  const addNew = async (pid) => {
-    if (postMap.has(pid)) return;
-    const fresh = await getPost(pid);
-    if (fresh) { postMap.set(pid, fresh); renderFeed(); }
-  };
-
-  const unsubWatch = await watchPostUpdates(communityId, { onScore: rescore, onNew: addNew });
+  // ONE reactive db.map subscription drives the whole feed — exactly the fork's
+  // subscribeToPostsInCommunity pattern. It emits the full post list on every change:
+  // new posts, deletes, and vote/comment score updates, all live and from any peer.
+  // (The previous design loaded a STATIC paginated snapshot via db.map without a
+  // callback and patched it with watchPostUpdates — that broke db.map's reactivity, so
+  // deletes and peers' new posts only appeared on reload.)
+  const unsubPosts = await subscribePosts(communityId, (p) => { posts = p; loaded = true; renderFeed(); });
   const unsubPolls = await subscribePolls(communityId, (p) => { polls = p; renderFeed(); });
   const unsubNames = onNameChange(() => renderFeed()); // a profile got named → refresh bylines
-  await loadMore(); // first page
-  el._cleanup = () => { io.disconnect(); unsubWatch?.(); unsubPolls?.(); unsubNames?.(); };
+  el._cleanup = () => { unsubPosts?.(); unsubPolls?.(); unsubNames?.(); };
   return el;
 }
 
