@@ -157,8 +157,8 @@ export default async function community({ communityId }) {
 
   // Keep loaded posts live (scores), AND surface brand-new posts from peers in real time
   // (this live-new path was lost when pagination replaced subscribePosts — the "feed
-  // doesn't sync" regression). `since` = mount time so the initial set isn't re-added.
-  const mountedAt = Date.now();
+  // doesn't sync" regression). watchPostUpdates tracks seen post ids, so the initial
+  // paginated set isn't re-added and genuinely new ids surface regardless of clocks.
   const rescore = async (pid) => {
     if (!postMap.has(pid)) return;
     const fresh = await getPost(pid);
@@ -172,7 +172,7 @@ export default async function community({ communityId }) {
     if (fresh) { postMap.set(pid, fresh); renderFeed(); }
   };
 
-  const unsubWatch = await watchPostUpdates(communityId, { onScore: rescore, onNew: addNew, since: mountedAt });
+  const unsubWatch = await watchPostUpdates(communityId, { onScore: rescore, onNew: addNew });
   const unsubPolls = await subscribePolls(communityId, (p) => { polls = p; renderFeed(); });
   const unsubNames = onNameChange(() => renderFeed()); // a profile got named → refresh bylines
   await loadMore(); // first page

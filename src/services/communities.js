@@ -101,21 +101,33 @@ export async function removeModerator(id, address) {
 }
 
 /**
- * Subscribe to all communities live. `onChange(communities[])` fires on every
- * change (newest first). Returns an unsubscribe function.
+ * Subscribe to all communities live. `onChange(communities[])` fires on every change
+ * (newest first). Watches BOTH community nodes AND membership nodes, because the member
+ * count derives from memberships — without the membership watch a join only showed up on
+ * reload (it never touches the community node). Mirrors the fork's subscribeToCommunitiesLive.
+ * Returns an unsubscribe function.
  */
 export async function subscribeCommunities(onChange) {
   const byId = new Map();
   const emit = () =>
     onChange([...byId.values()].sort((a, b) => b.createdAt - a.createdAt));
+  const refresh = async (id) => {
+    const { result } = await db.get(id);
+    if (result?.value?.type === TYPE.community) byId.set(id, build(result.value, await countMembers(id)));
+    else byId.delete(id);
+    emit();
+  };
 
-  const { results, unsubscribe } = await db.map(
+  const { results, unsubscribe: communityUnsub } = await db.map(
     { query: { type: TYPE.community } },
-    async ({ id, value, action }) => {
-      if (action === "removed") byId.delete(id);
-      else if (value?.type === TYPE.community) byId.set(id, build(value, await countMembers(id)));
-      emit();
+    ({ id, value, action }) => {
+      if (action === "removed") { byId.delete(id); emit(); }
+      else if (value?.type === TYPE.community) refresh(id);
     },
+  );
+  const { unsubscribe: memberUnsub } = await db.map(
+    { query: { type: TYPE.membership } },
+    ({ value }) => { const cid = value?.communityId; if (cid && byId.has(cid)) refresh(cid); },
   );
   for (const node of results) {
     if (node.value?.type === TYPE.community) {
@@ -123,5 +135,5 @@ export async function subscribeCommunities(onChange) {
     }
   }
   emit();
-  return unsubscribe;
+  return () => { communityUnsub?.(); memberUnsub?.(); };
 }

@@ -178,22 +178,30 @@ export async function subscribePosts(communityId, onChange) {
 /**
  * Live updates for a *paginated* community feed (pairs with loadPostsPage):
  * - `onScore(postId)` when a loaded post's votes/comments change → re-derive that post.
- * - `onNew(postId)` when a brand-new post arrives from a peer, so the feed stays live
- *   (it was lost when pagination replaced subscribePosts). "New" = `createdAt > since`
- *   (the feed's mount time), which is robust to db.map replaying the initial set on
- *   subscribe — no fragile action/known-set detection.
+ * - `onNew(postId)` when a post id we haven't seen yet arrives (from any peer), so the
+ *   feed stays live. We track seen ids in a Set (like the fork's subscribeToPostsInCommunity)
+ *   instead of comparing `createdAt` to the mount time: timestamps come from the *author's*
+ *   clock, so a peer with a slow clock would create posts that look "old" and never surface.
  * Returns an unsubscribe.
  */
-export async function watchPostUpdates(communityId, { onScore, onNew, since = 0 } = {}) {
+export async function watchPostUpdates(communityId, { onScore, onNew } = {}) {
   const relay = ({ value }) => { const pid = value?.postId; if (pid) onScore?.(pid); };
   const { unsubscribe: voteUnsub } = await db.map({ query: { type: TYPE.postVote } }, relay);
   const { unsubscribe: commentUnsub } = await db.map({ query: { type: TYPE.comment, communityId } }, relay);
-  const { unsubscribe: postUnsub } = await db.map(
+  const seen = new Set();
+  let primed = false; // the initial page set is loaded separately by loadPostsPage
+  const { results, unsubscribe: postUnsub } = await db.map(
     { query: { type: TYPE.post, communityId } },
     ({ id, value, action }) => {
-      if (action === "removed") return onScore?.(id); // view drops missing posts
-      if (value?.type === TYPE.post && (value.createdAt ?? 0) > since) onNew?.(id);
+      if (action === "removed") { seen.delete(id); return onScore?.(id); } // view drops missing posts
+      if (value?.type !== TYPE.post) return;
+      if (!primed) { seen.add(id); return; } // initial snapshot — don't surface as new
+      if (seen.has(id)) return onScore?.(id); // a known post changed → re-derive its card
+      seen.add(id);
+      onNew?.(id); // a brand-new post id from a peer → surface it live (the view dedupes)
     },
   );
+  for (const n of results) if (n.value?.type === TYPE.post) seen.add(n.id);
+  primed = true;
   return () => { voteUnsub?.(); commentUnsub?.(); postUnsub?.(); };
 }

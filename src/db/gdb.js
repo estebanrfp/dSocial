@@ -71,8 +71,8 @@ export const db = await gdb(GDB_NAME, {
 // Console handle for debugging (matches the GenosDB examples).
 globalThis.db = db;
 
-// Tear down the P2P connections when the page is hidden or unloaded. Without this,
-// rapid reloads pile up RTCPeerConnections (the new page inits before the browser
-// frees the old ones) and eventually hit Chromium's per-process cap — "Cannot
-// create so many PeerConnections", which would block the app from starting.
-addEventListener("pagehide", () => db.room?.leave?.());
+// Release the P2P room only on a REAL unload (close / reload / navigate away), exactly
+// like the official GenosDB examples (graph-p2p.html). NOT `pagehide`: that also fires
+// when the browser freezes a backgrounded tab, and calling leave() there drops the peer
+// from the room WITHOUT reconnecting — which silently killed live sync between tabs.
+addEventListener("beforeunload", () => db.room?.leave?.());
