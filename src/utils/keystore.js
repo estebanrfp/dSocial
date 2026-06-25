@@ -1,7 +1,7 @@
 // Minimal IndexedDB key/value store for secrets that can't go in localStorage —
 // specifically the RSA chat keypair (CryptoKey objects survive structured clone
 // into IndexedDB but not JSON). No dependencies.
-const DB_NAME = "interpoll-vault";
+const DB_NAME = "dsocial-vault";
 const STORE = "kv";
 let dbPromise;
 

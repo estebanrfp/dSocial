@@ -9,7 +9,7 @@ export default async () => {
   el.className = "shell network-page";
   el.innerHTML = html`
     <h1 class="page-title">Network</h1>
-    <p class="muted">InterPoll runs entirely peer-to-peer over GenosRTC (WebRTC). No server stores your data — every peer in the <code>${esc(GDB_NAME)}</code> room syncs directly.</p>
+    <p class="muted">dSocial runs entirely peer-to-peer over GenosRTC (WebRTC). No server stores your data — every peer in the <code>${esc(GDB_NAME)}</code> room syncs directly.</p>
     <section class="settings-card">
       <div class="net-status" data-status></div>
       <h2>Connected peers <span class="muted small" data-count>0</span></h2>
@@ -27,7 +27,7 @@ export default async () => {
     }`;
     peersBox.innerHTML = peers.length
       ? peers.map((p) => `<li class="mono">${esc(String(p).slice(0, 20))}…</li>`).join("")
-      : `<li class="muted small">No peers yet — open InterPoll in another browser or tab to see live sync.</li>`;
+      : `<li class="muted small">No peers yet — open dSocial in another browser or tab to see live sync.</li>`;
   });
 
   el._cleanup = () => unsub?.();

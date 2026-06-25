@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **InterPoll (vanilla)** are documented here. Format based on
+All notable changes to **dSocial** are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.16.0**,
 its only runtime dependency — bundled into the app, with its runtime plugins copied beside the bundle.
 
@@ -150,7 +150,7 @@ the ones a casual port never reaches.
 
 ## [0.1.0] — Showcase build
 
-The complete InterPoll experience, rebuilt from scratch on **GenosDB** in pure
+The complete dSocial experience, built from scratch on **GenosDB** in pure
 vanilla JavaScript (no framework, no TypeScript), across nine verified phases.
 
 ### Added

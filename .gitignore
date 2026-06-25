@@ -3,3 +3,4 @@ dist/
 .playwright-cli/
 *.log
 .DS_Store
+.netlify/

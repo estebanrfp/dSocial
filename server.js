@@ -15,4 +15,4 @@ const server = Bun.serve({
   },
 });
 
-console.log(`▸ interpoll-vanilla running at ${server.url}`);
+console.log(`▸ dsocial running at ${server.url}`);

@@ -1,4 +1,4 @@
-# Netlify configuration for the InterPoll vanilla showcase.
+# Netlify configuration for the dSocial showcase.
 # Bun builds the app and copies the GenosDB engine into dist/genosdb (served
 # from the root so the engine resolves its plugins at runtime).
 [build]

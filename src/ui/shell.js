@@ -22,7 +22,7 @@ export function mountShell(root) {
   root.innerHTML = `
     <div class="app">
       <header class="topbar">
-        <a class="brand" href="/home">InterPoll</a>
+        <a class="brand" href="/home">dSocial</a>
         <nav class="nav">
           ${NAV.map((n) => `<a class="nav-link" href="${n.href}">${esc(n.label)}</a>`).join("")}
         </nav>

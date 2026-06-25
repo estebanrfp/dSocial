@@ -1,29 +1,29 @@
-# InterPoll (vanilla)
+# dSocial
 
 > *A voice for everyone — no servers, no gatekeepers, signed by default.*
 
-> ### ▶️ [**Live demo**](https://interpoll-vanilla-showcase.netlify.app)
-> Try it now: **https://interpoll-vanilla-showcase.netlify.app** — a running,
+> ### ▶️ [**Live demo**](https://dsocial-genosdb.netlify.app)
+> Try it now: **https://dsocial-genosdb.netlify.app** — a running,
 > serverless build. Open it in **two browsers** to watch communities, polls and
 > votes sync peer-to-peer in real time, chat end-to-end encrypted, and see typing,
 > "viewing now" presence and 1:1 file transfer happen live — no backend in between.
 
 > ### 🛰️ A from-scratch GenosDB showcase
-> InterPoll's concept comes from [theEndless11's original InterPoll](https://github.com/theEndless11/decentralised).
-> This is an **independent, from-scratch build in vanilla JavaScript** — no
-> framework, no TypeScript — that rebuilds the experience on **[GenosDB](https://github.com/estebanrfp/gdb)**
-> to show how the whole app runs on a single peer-to-peer database: **one
-> dependency, zero servers, signed by default.**
+> dSocial is a **decentralised social network — communities, posts, polls, votes and
+> encrypted chat — built from scratch in vanilla JavaScript** (no framework, no
+> TypeScript) on **[GenosDB](https://github.com/estebanrfp/gdb)**, showing how an
+> entire social app runs on a single peer-to-peer database: **one dependency, zero
+> servers, signed by default.**
 
 ---
 
-## What is InterPoll?
+## What is dSocial?
 
-InterPoll is a **free, open, decentralised polling + discussion platform** — a place where communities vote, post, comment, and chat without any single company in control.
+dSocial is a **free, open, decentralised social network** — a place where communities vote, post, comment, and chat without any single company in control.
 
 When you vote, publish a post, or send a message, your activity is stored locally first and then synced peer-to-peer across the network. No central server owns your community history. Every action is cryptographically signed by an identity that lives only on your device, and posts replicate across peers so they are harder to suppress or quietly erase.
 
-**Anyone can create a community, earn trust under public rules, and moderate their own space** — with no algorithm deciding what you see and no central team that can silently remove your poll.
+**Anyone can create a community, earn trust under public rules, and moderate their own space** — with no algorithm deciding what you see and no central team that can silently remove your post.
 
 ---
 
@@ -31,7 +31,7 @@ When you vote, publish a post, or send a message, your activity is stored locall
 
 Traditional online communities share one weakness: **one server, one point of control**. The company that runs it can delete a poll, hide a post, alter results, or go offline.
 
-InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer graph database with built-in cryptographic identity:
+dSocial takes a different approach, powered by **GenosDB** — a peer-to-peer graph database with built-in cryptographic identity:
 
 - **No single owner.** Data lives on every participant's device and syncs directly peer-to-peer. There is no backend to capture or shut down.
 - **Your vote, signed by you.** Every action is signed by an identity that lives only on your device. No peer can forge a vote or post in your name.
@@ -67,7 +67,7 @@ InterPoll takes a different approach, powered by **GenosDB** — a peer-to-peer 
 
 ## How it works (plain language)
 
-InterPoll runs entirely on **GenosDB** — there are no servers to operate:
+dSocial runs entirely on **GenosDB** — there are no servers to operate:
 
 **1. Your identity (the key).** On first use you generate an identity that lives only on your device, protected by a passkey or recovery phrase. It signs every action automatically; peers verify those signatures, so nobody can act as you.
 
@@ -106,7 +106,7 @@ InterPoll runs entirely on **GenosDB** — there are no servers to operate:
 
 ## Honest about the limits
 
-InterPoll is designed to be **harder to censor and tamper with than a single-server platform** — not impossible:
+dSocial is designed to be **harder to censor and tamper with than a single-server platform** — not impossible:
 
 - Data survives as long as **at least one honest peer** keeps a copy and later reconnects.
 - A signature **cannot be forged** without your device key; peers reject any unsigned or invalidly-signed operation.
@@ -118,7 +118,7 @@ InterPoll is designed to be **harder to censor and tamper with than a single-ser
 
 ## Quick start
 
-InterPoll is a pure client app — **no backend, no relay server to run.**
+dSocial is a pure client app — **no backend, no relay server to run.**
 
 ```sh
 bun install

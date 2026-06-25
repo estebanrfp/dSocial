@@ -59,7 +59,7 @@ export function mountOnboarding(root) {
       `);
     } else {
       overlay.innerHTML = card(`
-        <div class="brand brand-lg">InterPoll</div>
+        <div class="brand brand-lg">dSocial</div>
         <h2>Your identity, your keys</h2>
         <p class="muted">A peer-to-peer network with no accounts server. Create a signed
           identity to participate, or recover an existing one.</p>

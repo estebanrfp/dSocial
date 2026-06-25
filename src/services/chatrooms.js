@@ -10,8 +10,8 @@ import { select, value as nodeOf, onChange } from "../db/store.js";
 import { activeAddress } from "./identity.js";
 import * as aes from "../utils/encryption.js";
 
-const VAULT = "interpoll-rooms";
-const salt = (roomId) => `${roomId}:interpoll-vanilla-v2`;
+const VAULT = "dsocial-rooms";
+const salt = (roomId) => `${roomId}:dsocial-v1`;
 
 const readVault = () => {
   try {
