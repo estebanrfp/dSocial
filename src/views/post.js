@@ -41,7 +41,7 @@ export default async function postView({ postId }) {
         <div class="markdown">${renderMarkdown(post.content)}</div>
         ${post.imageId ? html`<img class="post-image" data-postimg alt="Post image" />` : ""}
         <div class="post-meta-row">
-          <span class="meta">${badgeChip(authorKarma)} ${esc(displayNameFor(post.authorId))} · ${esc(timeAgo(post.createdAt))}${post.editedAt ? " · edited" : ""}</span>
+          <span class="meta">${badgeChip(authorKarma)} ${esc(displayNameFor(post.authorId))} <span class="addr">${esc(abbr(post.authorId))}</span> · ${esc(timeAgo(post.createdAt))}${post.editedAt ? " · edited" : ""} · <span class="sig">✓ signed</span></span>
           ${
             mine
               ? html`<div class="post-actions">

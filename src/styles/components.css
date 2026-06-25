@@ -51,6 +51,46 @@
   color: var(--accent-light);
 }
 
+/* Live peer count — the mesh, always in the bar */
+.net-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.net-pill:hover {
+  text-decoration: none;
+  color: var(--text-dim);
+}
+.net-pill .net-dot2 {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: none;
+}
+.net-pill.on {
+  color: var(--accent);
+}
+.net-pill.on:hover {
+  color: var(--accent-light);
+}
+.net-pill.on .net-dot2 {
+  background: var(--accent);
+  animation: net-pulse 2s infinite;
+}
+@keyframes net-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.45); }
+  60% { box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .net-pill.on .net-dot2 { animation: none; }
+}
+
 /* ── Buttons ─────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -175,7 +215,19 @@ textarea.input {
 }
 .brand-lg {
   font-size: 22px;
-  margin-bottom: var(--s-4);
+  margin-bottom: var(--s-2);
+}
+.tagline {
+  margin: 0 0 var(--s-4);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  opacity: 0.72;
+}
+.tagline::before {
+  content: "// ";
+  color: var(--muted);
+  opacity: 0.8;
 }
 
 .mnemonic {

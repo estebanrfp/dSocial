@@ -60,6 +60,7 @@ export function mountOnboarding(root) {
     } else {
       overlay.innerHTML = card(`
         <div class="brand brand-lg">d<span class="brand-acc">Social</span></div>
+        <p class="tagline">signed · peer-to-peer · serverless</p>
         <h2>Your identity, your keys</h2>
         <p class="muted">A peer-to-peer network with no accounts server. Create a signed
           identity to participate, or recover an existing one.</p>

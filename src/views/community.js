@@ -167,7 +167,7 @@ function postCard(p, canMod, me) {
         <div class="post-body">
           <h3>${esc(p.title)}</h3>
           ${snippet ? html`<p class="muted">${esc(snippet)}</p>` : ""}
-          <span class="meta">${esc(displayNameFor(p.authorId))} · ${esc(timeAgo(p.createdAt))} · ${esc(plural(p.commentCount, "comment"))}</span>
+          <span class="meta">${esc(displayNameFor(p.authorId))} <span class="addr">${esc(abbr(p.authorId))}</span> · ${esc(timeAgo(p.createdAt))} · ${esc(plural(p.commentCount, "comment"))} · <span class="sig">✓ signed</span></span>
         </div>
       </a>
       ${canDelete ? html`<button class="icon-btn post-del" data-del-post="${esc(p.id)}" data-mine="${mine ? "1" : ""}" title="${mine ? "Delete your post" : "Delete (moderator)"}" aria-label="Delete post">🗑</button>` : ""}

@@ -5,6 +5,7 @@ import { displayNameFor, onNameChange } from "../services/names.js";
 import { logout } from "../services/identity.js";
 import { subscribeRole } from "../services/roles.js";
 import { SUPER_ADMINS } from "../db/gdb.js";
+import { subscribePeers } from "../services/net.js";
 import { esc } from "./base.js";
 
 const NAV = [
@@ -26,6 +27,7 @@ export function mountShell(root) {
         <nav class="nav">
           ${NAV.map((n) => `<a class="nav-link" href="${n.href}">${esc(n.label)}</a>`).join("")}
         </nav>
+        <a class="net-pill" href="/network" data-netpill title="P2P network"></a>
         <div class="topbar-right"></div>
       </header>
       <div id="outlet" class="outlet"></div>
@@ -63,6 +65,15 @@ export function mountShell(root) {
       if (pill) pill.textContent = displayNameFor(addr);
     }
   });
+
+  // Live P2P peer count in the bar — the mesh, always visible.
+  const netpill = root.querySelector("[data-netpill]");
+  const renderNet = (peers) => {
+    const n = peers.length;
+    netpill.className = `net-pill${n ? " on" : ""}`;
+    netpill.innerHTML = `<span class="net-dot2"></span>${n ? `${n} peer${n > 1 ? "s" : ""} · live` : "no peers"}`;
+  };
+  subscribePeers(renderNet);
 
   return root.querySelector("#outlet");
 }

@@ -34,7 +34,8 @@
     padding: 6px 10px;
   }
   /* The address pill is informational; the role chip + Log out are the actions */
-  .id-pill {
+  .id-pill,
+  .net-pill {
     display: none;
   }
 
