@@ -33,7 +33,10 @@ export default async (params) => {
         <ul class="conv-list" data-convs></ul>
       </aside>
       <section class="chat-thread" data-thread>
-        <div class="chat-empty muted">Select or start a conversation.</div>
+        <div class="chat-empty">
+          <p class="chat-empty-title">Select or start a conversation</p>
+          <p class="chat-empty-sub">end-to-end encrypted · peer-to-peer · no server sees this</p>
+        </div>
       </section>
     </div>`;
 

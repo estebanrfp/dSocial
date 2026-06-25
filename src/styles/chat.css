@@ -1,14 +1,18 @@
 /* Chat: conversation sidebar + encrypted thread. */
 
 .chat-page {
-  height: calc(100dvh - var(--topbar-h, 60px));
+  flex: 1;
+  display: flex;
+  min-height: 0;
   padding: 0;
   max-width: none;
 }
 .chat-layout {
+  flex: 1;
   display: grid;
   grid-template-columns: 300px 1fr;
-  height: 100%;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* Sidebar */
@@ -182,6 +186,27 @@
 }
 .chat-empty {
   margin: auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-5);
+}
+.chat-empty-title {
+  color: var(--text-dim);
+  font-size: 15px;
+  margin: 0;
+}
+.chat-empty-sub {
+  color: var(--accent);
+  opacity: 0.72;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+.chat-empty-sub::before {
+  content: "// ";
+  color: var(--muted);
 }
 .thread-head {
   display: flex;
