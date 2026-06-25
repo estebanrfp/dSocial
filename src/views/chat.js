@@ -7,8 +7,12 @@ import { displayNameFor } from "../services/names.js";
 import { sendFileTo, onFile, MAX_FILE_BYTES, isOnline, onRoster, peerIdFor } from "../services/p2p.js";
 import { timeAgo, formatBytes } from "../utils/format.js";
 import { esc } from "../ui/base.js";
+import { abbr } from "../state/session.js";
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
+// Monospace-friendly lock glyph (replaces the color emoji) for the E2E badge.
+const LOCK = `<svg class="lock-ico" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="11" width="15" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+const CLIP = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`;
 
 export default async (params) => {
   const me = activeAddress();
@@ -57,7 +61,7 @@ export default async (params) => {
           .map(
             (c) =>
               `<li><button class="conv ${c.id === activePeer ? "active" : ""}" data-peer="${esc(c.id)}">
-                <span class="conv-addr">${esc(displayNameFor(c.id))}</span><time>${timeAgo(c.lastAt)}</time></button></li>`,
+                <span class="conv-id"><span class="conv-addr">${esc(displayNameFor(c.id))}</span><span class="conv-0x">${esc(abbr(c.id))}</span></span><time>${timeAgo(c.lastAt)}</time></button></li>`,
           )
           .join("")
       : `<li class="conv-empty muted">No conversations yet.</li>`;
@@ -75,15 +79,15 @@ export default async (params) => {
     clearTimeout(typingTimer);
     threadBox.innerHTML = `
       <header class="thread-head">
-        <span class="thread-peer">${esc(displayNameFor(peer))}<span class="peer-status" data-status></span></span>
-        <span class="lock-badge" title="End-to-end encrypted (RSA-OAEP)">🔒 E2E encrypted</span>
+        <span class="thread-peer">${esc(displayNameFor(peer))} <span class="thread-0x">${esc(abbr(peer))}</span><span class="peer-status" data-status></span></span>
+        <span class="lock-badge" title="End-to-end encrypted (RSA-OAEP)">${LOCK} E2E encrypted</span>
       </header>
       <div class="messages" data-messages></div>
       <div class="transfers" data-transfers></div>
       <div class="typing-ind muted small" data-typing hidden><span class="typing-dots"><span></span><span></span><span></span></span>${esc(displayNameFor(peer))} is typing</div>
       <form class="composer" data-send>
         <input type="file" data-file hidden />
-        <button type="button" class="icon-btn attach-btn" data-attach title="Send a file (peer-to-peer)" aria-label="Send a file">📎</button>
+        <button type="button" class="icon-btn attach-btn" data-attach title="Send a file (peer-to-peer)" aria-label="Send a file">${CLIP}</button>
         <input class="input" name="text" placeholder="Type an encrypted message…" autocomplete="off" />
         <button class="btn btn-primary" type="submit">Send</button>
       </form>`;
