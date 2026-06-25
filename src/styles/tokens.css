@@ -1,30 +1,31 @@
-/* Design tokens — a fresh, high-impact system for the vanilla edition. Editorial
-   dark canvas, electric-teal accent (deliberately NOT the fork's indigo). Single
-   source of truth for color, type, spacing, radius, shadow and motion. */
+/* Design tokens — "Cipher Terminal", refined. A monospace canvas on flat near-black,
+   one electric-teal accent doing almost all the work, hairline dividers instead of
+   boxes, and no glow. The interface IS the network: signed, peer-to-peer, serverless.
+   Single source of truth for color, type, spacing, radius, shadow and motion. */
 :root {
   color-scheme: dark;
 
-  /* Canvas + graduated surfaces */
-  --bg: #090a0d;
-  --bg-2: #0d0f13;
-  --surface: #14161b;
-  --surface-2: #1b1e24;
-  --surface-3: #23262e;
-  --border: #262a32;
-  --border-strong: #343a45;
+  /* Canvas + graduated surfaces — flat, near-black, faintly cool */
+  --bg: #0a0b0c;
+  --bg-2: #0d0f10;
+  --surface: #101315;
+  --surface-2: #161a1c;
+  --surface-3: #1d2225;
+  --border: rgba(255, 255, 255, 0.065);
+  --border-strong: rgba(255, 255, 255, 0.13);
 
-  /* Text */
-  --text: #f2f3f5;
-  --text-dim: #b8bdc7;
-  --muted: #868c98;
+  /* Text — bone-white down to a dim, faintly green-grey */
+  --text: #e6ebe8;
+  --text-dim: #9aa39d;
+  --muted: #6c766f;
 
-  /* Accent + status */
+  /* Accent + status — one teal carries the system */
   --accent: #2dd4bf;
   --accent-strong: #14b8a6;
   --accent-light: #6ee7d8;
   --accent-contrast: #04211d;
   --accent-ink: #04211d; /* text on a solid accent fill */
-  --accent-soft: rgba(45, 212, 191, 0.13);
+  --accent-soft: rgba(45, 212, 191, 0.1);
   --accent-rgb: 45, 212, 191;
   --danger: #fb7185;
   --danger-ink: #2a0a0f; /* text on a solid danger fill */
@@ -33,7 +34,7 @@
   --warn-soft: rgba(251, 191, 36, 0.14);
   --ok: #4ade80;
   --ok-rgb: 74, 222, 128;
-  --ok-soft: rgba(74, 222, 128, 0.14);
+  --ok-soft: rgba(74, 222, 128, 0.13);
   --violet: #a78bfa;
   --violet-soft: rgba(167, 139, 250, 0.16);
 
@@ -47,14 +48,14 @@
   --role-super: var(--violet);
   --role-super-soft: var(--violet-soft);
 
-  /* Canvas glow (radial highlights behind the dark canvas) */
-  --glow: #0f1319;
-  --scrim: rgba(5, 6, 8, 0.86); /* modal / overlay veil */
+  /* Overlay veil + a near-invisible canvas tint (no glow) */
+  --glow: #0c0f10;
+  --scrim: rgba(4, 5, 6, 0.88); /* modal / overlay veil */
 
-  /* Typography */
-  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Inter", system-ui, sans-serif;
-  --mono: ui-monospace, "JetBrains Mono", "SF Mono", monospace;
+  /* Typography — monospace everywhere */
+  --font: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-display: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
 
   /* Spacing scale */
   --s-1: 4px;
@@ -66,13 +67,13 @@
   --s-7: 48px;
   --s-8: 64px;
 
-  /* Radius / shadow / motion */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 18px;
+  /* Radius / shadow / motion — sober corners, flat surfaces, minimal shadow */
+  --r-sm: 7px;
+  --r-md: 9px;
+  --r-lg: 12px;
   --r-full: 999px;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.5);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.62);
   --ring: 0 0 0 2px var(--accent-soft);
   --t: 140ms cubic-bezier(0.2, 0, 0, 1);
 }

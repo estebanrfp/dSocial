@@ -140,15 +140,15 @@
 .comments {
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
 }
 .comment {
   display: flex;
   gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  padding: var(--s-4) var(--s-2);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
 }
 .post-votes.sm .vote {
   font-size: 11px;

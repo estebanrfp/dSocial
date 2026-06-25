@@ -8,9 +8,9 @@ import { SUPER_ADMINS } from "../db/gdb.js";
 import { esc } from "./base.js";
 
 const NAV = [
-  { href: "/home", label: "Home" },
-  { href: "/search", label: "Search" },
-  { href: "/chat", label: "Chat" },
+  { href: "/home", label: "home" },
+  { href: "/search", label: "search" },
+  { href: "/chat", label: "chat" },
 ];
 
 /**
@@ -22,7 +22,7 @@ export function mountShell(root) {
   root.innerHTML = `
     <div class="app">
       <header class="topbar">
-        <a class="brand" href="/home">dSocial</a>
+        <a class="brand" href="/home">d<span class="brand-acc">Social</span></a>
         <nav class="nav">
           ${NAV.map((n) => `<a class="nav-link" href="${n.href}">${esc(n.label)}</a>`).join("")}
         </nav>

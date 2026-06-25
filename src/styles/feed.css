@@ -49,10 +49,11 @@
   border-radius: var(--r-md);
   display: grid;
   place-items: center;
-  font-weight: 800;
-  font-size: 18px;
-  color: var(--accent-contrast);
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
   flex: none;
 }
 .avatar.lg {
@@ -65,7 +66,7 @@
 .meta {
   font-size: 12px;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Community card */
@@ -76,11 +77,11 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  transition: border-color var(--t), transform var(--t);
+  transition: border-color var(--t), background var(--t);
 }
 .community-card:hover {
   border-color: var(--border-strong);
-  transform: translateY(-2px);
+  background: var(--surface-2);
   text-decoration: none;
 }
 .community-body {
@@ -89,6 +90,10 @@
 .community-body h3 {
   margin: 0 0 2px;
   font-size: 16px;
+  color: var(--text);
+}
+.community-card:hover h3 {
+  color: var(--accent);
 }
 .community-body .muted {
   font-size: 13px;
@@ -165,18 +170,25 @@
   margin-left: 6px;
 }
 
-/* Post card */
+/* Feed: a single column of posts/polls separated by hairlines — no boxes. */
+.feed-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Post row */
 .post-card {
   display: flex;
-  gap: var(--s-3);
-  padding: var(--s-4);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  transition: border-color var(--t);
+  gap: var(--s-4);
+  padding: var(--s-5) var(--s-3);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  transition: background var(--t);
 }
 .post-card:hover {
-  border-color: var(--border-strong);
+  background: var(--surface);
   text-decoration: none;
 }
 .post-votes {
@@ -198,11 +210,11 @@
 }
 .vote:hover {
   color: var(--accent);
-  background: var(--accent-soft);
+  background: transparent;
 }
 .score {
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 13px;
 }
 .post-body {
   min-width: 0;
@@ -210,7 +222,11 @@
 }
 .post-body h3 {
   margin: 0 0 4px;
-  font-size: 16px;
+  font-size: 17px;
+  color: var(--text);
+}
+.post-card:hover h3 {
+  color: var(--accent);
 }
 .post-body .muted {
   font-size: 14px;

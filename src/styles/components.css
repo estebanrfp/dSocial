@@ -23,15 +23,15 @@
   margin-left: var(--s-4);
 }
 .nav-link {
-  color: var(--text-dim);
-  font-weight: 600;
-  font-size: 14px;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 13px;
   padding: var(--s-2) var(--s-3);
   border-radius: var(--r-sm);
+  transition: color var(--t);
 }
 .nav-link:hover {
   color: var(--text);
-  background: var(--surface-2);
   text-decoration: none;
 }
 .topbar-right {
@@ -41,14 +41,14 @@
 }
 .id-pill {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--accent);
-  background: var(--accent-soft);
-  padding: 5px 10px;
-  border-radius: var(--r-full);
+  padding: 5px 8px;
+  border-radius: var(--r-sm);
 }
 .id-pill:hover {
   text-decoration: none;
+  color: var(--accent-light);
 }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
@@ -58,8 +58,8 @@
   justify-content: center;
   gap: var(--s-2);
   font: inherit;
-  font-weight: 650;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 13px;
   line-height: 1;
   padding: 11px 18px;
   border-radius: var(--r-sm);
@@ -141,7 +141,6 @@ textarea.input {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   padding: var(--s-6);
-  box-shadow: var(--shadow);
 }
 
 /* ── Onboarding overlay ──────────────────────────────────────── */

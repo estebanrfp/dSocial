@@ -44,7 +44,7 @@ export default async function community({ communityId }) {
       <div class="detail-actions" data-actions></div>
     </header>
     ${isOwner ? html`<section class="mod-panel" data-modpanel></section>` : ""}
-    <div class="grid" data-feed><p class="muted">Loading…</p></div>
+    <div class="feed-list" data-feed><p class="muted">Loading…</p></div>
   `;
 
   if (isOwner) {
