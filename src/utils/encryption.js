@@ -1,6 +1,6 @@
 // AES-256-GCM for room/group encryption: random or password-derived (PBKDF2)
 // keys, a 96-bit IV prepended to the ciphertext, base64(url) export for invite
-// links. Web Crypto only, no dependencies. Ported from the fork's EncryptionService.
+// links. Web Crypto only, no dependencies.
 const ALGO = "AES-GCM";
 const KEY_BITS = 256;
 const IV_BYTES = 12;

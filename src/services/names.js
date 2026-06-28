@@ -1,7 +1,7 @@
 // Resolve an Ethereum address to its profile display name — show names instead of
 // 0x… everywhere. A live cache of `user` nodes' displayNames (which propagate P2P,
 // so they reach any browser with a connected peer), read synchronously by the views.
-// Dynamic resolution (not denormalised onto each post like the fork), so a renamed
+// Dynamic resolution (not denormalised onto each post), so a renamed
 // profile updates everywhere. Falls back to the abbreviated address.
 import { TYPE } from "../db/schema.js";
 import { select, onChange } from "../db/store.js";

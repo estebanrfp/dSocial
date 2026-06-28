@@ -1,6 +1,6 @@
 // Images stored as base64 inside ACL-owned GenosDB nodes (no blob server). Files
 // are compressed client-side with a canvas (resize + JPEG) so nodes stay small —
-// no external dependency, unlike the fork's image-compression lib.
+// no external dependency.
 import { db } from "../db/gdb.js";
 import { TYPE, newId } from "../db/schema.js";
 

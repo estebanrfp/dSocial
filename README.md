@@ -48,7 +48,7 @@ dSocial takes a different approach, powered by **GenosDB** — a peer-to-peer gr
 | Feature | What it means for you |
 |---|---|
 | **Cryptographically signed actions** | Every vote, post, comment and message is signed by your device identity and verified by peers. Forgery is impossible without your key. |
-| **Communities, posts & threaded comments** | Reddit-style feeds with Markdown posts (sanitised, zero dependencies) and votable threaded comments. |
+| **Communities, posts & threaded comments** | Community feeds with Markdown posts (sanitised, zero dependencies) and votable threaded comments. |
 | **Derived tallies & karma** | Scores, poll tallies and user karma are *derived* by aggregating signed vote nodes — no shared counter to race on, no number a peer can fake. A vote only counts when its verified signer matches the declared voter. |
 | **Reputation badges** | Karma unlocks six animated tiers — Spark → Bronze → Silver → Gold → Crystal → Legend — hand-drawn as inline SVG (no GIFs, no API, no library). Derived from the same signed votes, so they're unforgeable *and* recomputable by any peer; a toast celebrates each tier-up. |
 | **Polls, public or invite-only** | Single/multi-choice polls; one deterministic vote per identity; single-use invite codes for private polls. |
@@ -149,7 +149,7 @@ bun run serve    # Serve an existing build locally
 
 ### Stack
 
-Vanilla DOM + a tiny `signal()` primitive and a history-API router on the front end; **GenosDB 0.16.0** for data, identity and P2P sync. Built and served with **[Bun](https://bun.sh)**. Installing GenosDB pulls **zero transitive dependencies** — it is the only one.
+Vanilla DOM + a tiny `signal()` primitive and a history-API router on the front end; **GenosDB 0.16.1** for data, identity and P2P sync. Built and served with **[Bun](https://bun.sh)**. Installing GenosDB pulls **zero transitive dependencies** — it is the only one.
 
 ### Data model
 

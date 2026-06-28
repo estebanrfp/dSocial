@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to **dSocial** are documented here. Format based on
-[Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.16.0**,
+[Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.16.1**,
 its only runtime dependency — bundled into the app, with its runtime plugins copied beside the bundle.
 
 ## [0.4.0] — Realtime correctness, hybrid rooms & consolidation
@@ -93,9 +93,9 @@ the ones a casual port never reaches.
 
 - New services `names`, `presence`, `roster` and `filetransfer` power the live features;
   all the ephemeral ones ride **GenosRTC data channels**, not the database.
-- `rx` (radix prefix index) was evaluated and dropped — non-functional in GenosDB 0.16.0
-  with the rtc+sm setup (index stays empty). Audio/video rooms were considered but
-  deferred (full-mesh media tops out at a handful of peers without an SFU).
+- `rx` (radix prefix index) was evaluated but not adopted — field-level `$text` search
+  already covers discovery across communities, posts, polls and people. Audio/video rooms
+  were considered but deferred (full-mesh media tops out at a handful of peers without an SFU).
 
 ## [0.2.0] — Polish, gamification & hardening
 

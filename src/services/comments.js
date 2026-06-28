@@ -1,7 +1,6 @@
 // Comments + votes. Each comment is an ACL-owned node ({type:'comment', postId,
 // parentId?}); each vote is its own signed node, so scores derive from votes. Reads
-// derive synchronously from the in-memory store (the app's single db.map). Ported from
-// the fork's CommentService.
+// derive synchronously from the in-memory store (the app's single db.map).
 import { db } from "../db/gdb.js";
 import { TYPE, newId, commentVoteId, isAuthenticVote } from "../db/schema.js";
 import { select, onChange } from "../db/store.js";

@@ -1,7 +1,7 @@
 // Posts + up/down votes. Each post is an ACL-owned node (author = owner); each vote is a
 // deterministic, ACL-owned node so scores derive from signed votes (no mutable counter to
 // corrupt). Reads derive synchronously from the in-memory store (the app's single db.map)
-// — no per-call db.map. Ported from the fork's PostService.
+// — no per-call db.map.
 import { db } from "../db/gdb.js";
 import { TYPE, newId, postVoteId, isAuthenticVote } from "../db/schema.js";
 import { select, value as nodeOf, onChange } from "../db/store.js";

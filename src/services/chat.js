@@ -2,7 +2,7 @@
 // RSA-OAEP keypair (private key kept in IndexedDB, public key published as a
 // `chatKey` node). A message is encrypted for the recipient AND the sender, then
 // written as an ACL-owned `dm` node; the recipient is granted `write` (to mark it
-// read) but not delete. The synced node IS the delivery. Ported from the fork.
+// read) but not delete. The synced node IS the delivery.
 import { db } from "../db/gdb.js";
 import { TYPE } from "../db/schema.js";
 import { select, onChange } from "../db/store.js";

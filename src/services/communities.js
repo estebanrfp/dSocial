@@ -1,7 +1,6 @@
 // Communities. Created/owned via node ACLs (creator = owner); membership and the
 // moderator list are signed nodes; member counts derive from membership nodes. Reads
-// derive synchronously from the in-memory store (the app's single db.map). Ported to
-// vanilla from the fork's CommunityService.
+// derive synchronously from the in-memory store (the app's single db.map).
 import { db } from "../db/gdb.js";
 import { TYPE, communityId, membershipId } from "../db/schema.js";
 import { select, value as nodeOf, onChange } from "../db/store.js";

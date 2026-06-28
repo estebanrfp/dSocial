@@ -126,8 +126,8 @@ export default async function community({ communityId }) {
     );
   };
 
-  // ONE reactive db.map subscription drives the whole feed — exactly the fork's
-  // subscribeToPostsInCommunity pattern. It emits the full post list on every change:
+  // ONE reactive db.map subscription drives the whole feed. It emits the full post
+  // list on every change:
   // new posts, deletes, and vote/comment score updates, all live and from any peer.
   // (The previous design loaded a STATIC paginated snapshot via db.map without a
   // callback and patched it with watchPostUpdates — that broke db.map's reactivity, so

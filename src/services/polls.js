@@ -2,7 +2,7 @@
 // deterministically-id'd node (`pollId:voter`), so tallies derive from signed votes (one
 // vote per identity, re-voting overwrites). Private polls gate voting behind single-use
 // invite codes. Reads derive synchronously from the in-memory store (the app's single
-// db.map). Ported from the fork's PollService.
+// db.map).
 import { db } from "../db/gdb.js";
 import { TYPE, newId, voteId, isAuthenticVote } from "../db/schema.js";
 import { select, value as nodeOf, onChange } from "../db/store.js";

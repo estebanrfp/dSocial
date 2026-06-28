@@ -192,7 +192,7 @@ export default async (params) => {
       }
     });
 
-    // Broadcast my typing state, auto-clearing after 2s idle (fork's pattern).
+    // Broadcast my typing state, auto-clearing after 2s idle.
     input.addEventListener("input", () => {
       sendTyping(peer, true);
       clearTimeout(typingTimer);
