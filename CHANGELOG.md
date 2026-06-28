@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to **dSocial** are documented here. Format based on
-[Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.16.1**,
+[Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.17.0**,
 its only runtime dependency — bundled into the app, with its runtime plugins copied beside the bundle.
 
 ## [0.4.0] — Realtime correctness, hybrid rooms & consolidation

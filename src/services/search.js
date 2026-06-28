@@ -1,6 +1,6 @@
 // Field-level full-text search via GenosDB's native `$text` operator. Each type
 // is queried with an `$or` over its searchable fields, scoped by `type`. $text is
-// accent-folded and matches whole words within a field. Ported from searchService.
+// accent-folded and matches whole words within a field.
 import { db } from "../db/gdb.js";
 import { TYPE } from "../db/schema.js";
 

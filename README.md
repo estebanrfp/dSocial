@@ -149,7 +149,7 @@ bun run serve    # Serve an existing build locally
 
 ### Stack
 
-Vanilla DOM + a tiny `signal()` primitive and a history-API router on the front end; **GenosDB 0.16.1** for data, identity and P2P sync. Built and served with **[Bun](https://bun.sh)**. Installing GenosDB pulls **zero transitive dependencies** — it is the only one.
+Vanilla DOM + a tiny `signal()` primitive and a history-API router on the front end; **GenosDB 0.17.0** for data, identity and P2P sync. Built and served with **[Bun](https://bun.sh)**. Installing GenosDB pulls **zero transitive dependencies** — it is the only one.
 
 ### Data model
 
