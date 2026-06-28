@@ -3,13 +3,26 @@
 import { html, esc } from "../ui/base.js";
 import { subscribePeers } from "../services/net.js";
 import { GDB_NAME } from "../db/gdb.js";
+import { mountMeshMonitor } from "../ui/mesh-monitor.js";
 
 export default async () => {
   const el = document.createElement("main");
   el.className = "shell network-page";
   el.innerHTML = html`
     <h1 class="page-title">Network</h1>
-    <p class="muted">dSocial runs entirely peer-to-peer over GenosRTC (WebRTC). No server stores your data — every peer in the <code>${esc(GDB_NAME)}</code> room syncs directly.</p>
+    <p class="muted">dSocial runs entirely peer-to-peer over GenosRTC (WebRTC), self-organized as a <strong>cellular mesh</strong>: peers group into cells linked by bridge nodes. No server stores your data — every peer in the <code>${esc(GDB_NAME)}</code> room syncs directly.</p>
+
+    <section class="settings-card">
+      <h2>Mesh topology</h2>
+      <div class="mesh-monitor" data-mesh></div>
+      <ul class="mesh-legend">
+        <li><i class="mesh-dot self"></i> You</li>
+        <li><i class="mesh-dot peer"></i> Peer</li>
+        <li><i class="mesh-dot bridge"></i> Bridge</li>
+        <li><i class="mesh-dot cell"></i> Cell</li>
+      </ul>
+    </section>
+
     <section class="settings-card">
       <div class="net-status" data-status></div>
       <h2>Connected peers <span class="muted small" data-count>0</span></h2>
@@ -19,6 +32,7 @@ export default async () => {
   const statusBox = el.querySelector("[data-status]");
   const countBox = el.querySelector("[data-count]");
   const peersBox = el.querySelector("[data-peers]");
+  const meshBox = el.querySelector("[data-mesh]");
 
   const unsub = subscribePeers((peers) => {
     countBox.textContent = peers.length;
@@ -30,6 +44,8 @@ export default async () => {
       : `<li class="muted small">No peers yet — open dSocial in another browser or tab to see live sync.</li>`;
   });
 
-  el._cleanup = () => unsub?.();
+  const stopMesh = mountMeshMonitor(meshBox);
+
+  el._cleanup = () => { unsub?.(); stopMesh?.(); };
   return el;
 };

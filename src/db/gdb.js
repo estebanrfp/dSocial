@@ -51,7 +51,11 @@ export const GOVERNANCE_RULES = [
 
 /** The ready GenosDB instance (top-level await initialises it once). */
 export const db = await gdb(GDB_NAME, {
-  rtc: true,
+  // Cellular mesh ON: peers self-organize into cells linked by bridge nodes
+  // (O(N) connections instead of O(N²)). cellSize is intentionally small so the
+  // Network monitor shows several cells + bridges with only a handful of peers
+  // (demo). For a large real network prefer `cells: true` (auto-sizes the cells).
+  rtc: { cells: { cellSize: 4 } },
   sm: {
     superAdmins: SUPER_ADMINS,
     customRoles: ROLES,
