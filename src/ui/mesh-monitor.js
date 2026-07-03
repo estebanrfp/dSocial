@@ -56,13 +56,21 @@ export function mountMeshMonitor(container) {
     if (st) selfState = { cellId: st.cellId, isBridge: !!st.isBridge, bridges: st.bridges || [] };
     const info = mesh?.getPeerInfo?.();
     if (info) for (const [id, v] of info) {
-      if (id !== selfId) remote.set(id, { cellId: v.cell, isBridge: !!v.isBridge, bridges: v.bridges || [] });
+      if (id !== selfId) remote.set(id, { cellId: v.cell, isBridge: !!v.isBridge, bridges: v.bridges || [], at: Date.now() });
     }
   } catch {}
 
   const allPeers = () => {
+    // Expire gossip-only ghosts: peers from other cells never emit
+    // peer:leave, so drop entries with no fresh state for 90s and no live
+    // RTC connection (physically connected background tabs stay).
+    const cutoff = Date.now() - 90000;
+    const connected = room?.getPeers?.() ?? {};
     const m = new Map();
-    for (const [id, st] of remote) m.set(id, st);
+    for (const [id, st] of remote) {
+      if ((st.at ?? 0) < cutoff && !(id in connected)) { remote.delete(id); continue; }
+      m.set(id, st);
+    }
     if (selfId) m.set(selfId, { cellId: selfState.cellId, isBridge: selfState.isBridge, bridges: selfState.bridges });
     return m;
   };
@@ -158,14 +166,21 @@ export function mountMeshMonitor(container) {
   // Live updates from the cellular mesh.
   const onJoin = () => invalidate();
   const onLeave = (id) => { remote.delete(id); invalidate(); };
+  // Repaint only on real model changes — the engine re-gossips unchanged
+  // state every ~10s as a keep-alive, which must refresh liveness, not CPU.
+  const sig = (st) => `${st.cellId}|${st.isBridge}|${(st.bridges || []).join(",")}`;
   const onSelf = (s) => {
-    selfState = { cellId: s.cellId, isBridge: !!s.isBridge, bridges: Array.isArray(s.bridges) ? s.bridges : [] };
-    invalidate();
+    const next = { cellId: s.cellId, isBridge: !!s.isBridge, bridges: Array.isArray(s.bridges) ? s.bridges : [] };
+    const changed = sig(next) !== sig(selfState);
+    selfState = next;
+    if (changed) invalidate();
   };
   const onPeer = (d) => {
     if (d.id === selfId) return;
-    remote.set(d.id, { cellId: d.cell, isBridge: !!d.isBridge, bridges: Array.isArray(d.bridges) ? d.bridges : [] });
-    invalidate();
+    const prev = remote.get(d.id);
+    const next = { cellId: d.cell, isBridge: !!d.isBridge, bridges: Array.isArray(d.bridges) ? d.bridges : [], at: Date.now() };
+    remote.set(d.id, next); // keep-alives always refresh `at`
+    if (!prev || sig(next) !== sig(prev)) invalidate();
   };
   room?.on?.("peer:join", onJoin);
   room?.on?.("peer:leave", onLeave);
@@ -176,9 +191,13 @@ export function mountMeshMonitor(container) {
   ro.observe(container);
   resize();
   loop();
+  // Ghost sweep: silent gossip-only peers expire inside allPeers() — this
+  // pulse repaints so they actually disappear even with no events arriving.
+  const sweep = setInterval(invalidate, 15000);
 
   return () => {
     cancelAnimationFrame(raf);
+    clearInterval(sweep);
     ro.disconnect();
     room?.off?.("peer:join", onJoin);
     room?.off?.("peer:leave", onLeave);
