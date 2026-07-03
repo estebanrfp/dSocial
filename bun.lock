@@ -5,11 +5,11 @@
     "": {
       "name": "dsocial",
       "dependencies": {
-        "genosdb": "0.17.0",
+        "genosdb": "0.18.0",
       },
     },
   },
   "packages": {
-    "genosdb": ["genosdb@0.17.0", "", {}, "sha512-AOZJwG3mxNllmmjBjf0MoaIbfRx/9Tt/j5Bb9tPBT4IY8YiP89Fg+fqpU5aQintcjVIwyg1tffGLR/si7MerYQ=="],
+    "genosdb": ["genosdb@0.18.0", "", {}, "sha512-V/eX/3fdF+dhV2qI1PmIoJ2/U8mcAO6SUlOIFXxJpXMHZywEZaEnZDKa4fyidCItbrSNUtZbpJcNBBJfJmxjGw=="],
   }
 }
