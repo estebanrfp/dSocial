@@ -1,7 +1,7 @@
 // Network page: live P2P status + connected peers, straight from GenosRTC. Drives
 // home the showcase point — no server, peers sync directly over WebRTC.
 import { html, esc } from "../ui/base.js";
-import { subscribePeers } from "../services/net.js";
+import { subscribePeers, getPeerType, serverCount } from "../services/net.js";
 import { GDB_NAME } from "../db/gdb.js";
 import { mountMeshMonitor } from "../ui/mesh-monitor.js";
 
@@ -19,6 +19,7 @@ export default async () => {
         <li><i class="mesh-dot self"></i> You</li>
         <li><i class="mesh-dot peer"></i> Peer</li>
         <li><i class="mesh-dot bridge"></i> Bridge</li>
+        <li><i class="mesh-dot server"></i> Server</li>
         <li><i class="mesh-dot cell"></i> Cell</li>
       </ul>
     </section>
@@ -35,12 +36,13 @@ export default async () => {
   const meshBox = el.querySelector("[data-mesh]");
 
   const unsub = subscribePeers((peers) => {
+    const srv = serverCount();
     countBox.textContent = peers.length;
     statusBox.innerHTML = `<span class="net-dot ${peers.length ? "on" : "off"}"></span>${
       peers.length ? `Connected to ${peers.length} peer${peers.length > 1 ? "s" : ""}` : "Waiting for peers…"
-    }`;
+    }${srv ? ` · ${srv} always-on node${srv > 1 ? "s" : ""}` : ""}`;
     peersBox.innerHTML = peers.length
-      ? peers.map((p) => `<li class="mono">${esc(String(p).slice(0, 20))}…</li>`).join("")
+      ? peers.map((p) => `<li class="mono">${esc(String(p).slice(0, 20))}…${getPeerType(p) === "superpeer" ? ` <span class="muted small">srv</span>` : ""}</li>`).join("")
       : `<li class="muted small">No peers yet — open dSocial in another browser or tab to see live sync.</li>`;
   });
 

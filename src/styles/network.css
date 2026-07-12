@@ -43,4 +43,5 @@
 .mesh-legend .mesh-dot.self { background: var(--violet); }
 .mesh-legend .mesh-dot.peer { background: var(--ok); }
 .mesh-legend .mesh-dot.bridge { background: var(--warn); }
+.mesh-legend .mesh-dot.server { background: var(--pink, #ec4899); }
 .mesh-legend .mesh-dot.cell { background: var(--accent); }

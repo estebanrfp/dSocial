@@ -6,6 +6,7 @@
 // examples/mesh-cells-monitor-modern.html — same data model and layout, no message
 // animations, themed with the app's design tokens.
 import { db } from "../db/gdb.js";
+import { getPeerType } from "../services/net.js";
 
 /** Resolve a CSS custom property to a literal color (canvas can't use var()). */
 const cssVar = (name, fallback) =>
@@ -34,6 +35,7 @@ export function mountMeshMonitor(container) {
     self: cssVar("--violet", "#a78bfa"),
     peer: cssVar("--ok", "#4ade80"),
     bridge: cssVar("--warn", "#fbbf24"),
+    server: cssVar("--pink", "#ec4899"),
     link: cssVar("--border-strong", "rgba(255,255,255,.13)"),
     text: cssVar("--text-dim", "#9aa39d"),
   };
@@ -97,7 +99,7 @@ export function mountMeshMonitor(container) {
       ps.forEach((p, i) => {
         const a = step * i - Math.PI / 2;
         const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r;
-        out.peers.push({ x: px, y: py, isSelf: p.id === selfId, isBridge: !!p.isBridge, label: shortId(p.id) });
+        out.peers.push({ x: px, y: py, isSelf: p.id === selfId, isBridge: !!p.isBridge, isServer: getPeerType(p.id) === "superpeer", label: shortId(p.id) });
         out.links.push({ x1: px, y1: py, x2: cx, y2: cy, type: "member" });
       });
       if (ci < sorted.length - 1) {
@@ -134,10 +136,10 @@ export function mountMeshMonitor(container) {
     }
 
     for (const p of lo.peers) {
-      const r = p.isSelf ? 11 : p.isBridge ? 9 : 7;
+      const r = p.isSelf ? 11 : p.isServer ? 10 : p.isBridge ? 9 : 7;
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = p.isSelf ? C.self : p.isBridge ? C.bridge : C.peer;
+      ctx.fillStyle = p.isSelf ? C.self : p.isServer ? C.server : p.isBridge ? C.bridge : C.peer;
       ctx.fill();
       ctx.fillStyle = C.text;
       ctx.font = `10px ${FONT}`;
