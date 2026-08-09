@@ -6,12 +6,11 @@ settings:
 
 dependencies:
   genosdb:
-    specifier: 0.22.0
-    version: 0.22.0
+    specifier: 0.23.0
+    version: 0.23.0
 
 packages:
 
-  /genosdb@0.22.0:
-    resolution: {integrity: sha512-6ceawc2k3/ZiKO2JBE8s6/PMGwI3hIh212/OcAYRIKusm7EfJWWWd5w8uSz8vHcDNd3iPmW00SJSVjptC53YHw==}
-    engines: {node: 23.x, npm: 11.x}
+  /genosdb@0.23.0:
+    resolution: {integrity: sha512-yKcZUFFgcZEJ/J0BKVy/ysNRcrCEaqLvS9NmpJ5eCZmNwPs+Cl45Xa7CIny++dvByx+vEamNly1+A7NViBna1A==}
     dev: false
