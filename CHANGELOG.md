@@ -1,8 +1,24 @@
 # Changelog
 
 All notable changes to **dSocial** are documented here. Format based on
-[Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.17.0**,
+[Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.33.4**,
 its only runtime dependency — bundled into the app, with its runtime plugins copied beside the bundle.
+
+## [0.4.1] — GenosDB 0.33.4
+
+### Changed
+
+- **Engine upgraded from 0.25.0 to 0.33.4.** Every operation is now judged by its
+  author's signature on **every** path — live, delta and full state alike (0.32.0),
+  where catch-up used to apply state by clock alone. The app's constitution already
+  matches that model: the base role writes, links and deletes, and every post and
+  community is an owned node, so authorship decides who may change what. Ids the
+  engine generates for owned values now begin with the owner's address (0.33.1),
+  a removal leaves other nodes' signed edge sets alone while every read resolves
+  them (0.33.2 / 0.33.3), and the operation window survives a closing tab (0.33.4).
+- **One migration note.** Nodes written by 0.25.0 carry no author receipt, so they
+  stop travelling to new peers until a superadmin signs in once — that sign-in
+  re-signs everything it holds. Deploy the app and any always-on peer together.
 
 ## [0.4.0] — Realtime correctness, hybrid rooms & consolidation
 
