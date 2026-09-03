@@ -10,6 +10,6 @@
     "serve": "bun server.js"
   },
   "dependencies": {
-    "genosdb": "0.33.4"
+    "genosdb": "0.33.5"
   }
 }
