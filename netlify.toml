@@ -1,13 +1,11 @@
 # Netlify configuration for the dSocial showcase.
-# Bun builds the app and copies the GenosDB engine into dist/genosdb (served
-# from the root so the engine resolves its plugins at runtime).
+# Bun builds the app; the GenosDB engine is loaded from the CDN at runtime.
 [build]
   command = "bun run build"
   publish = "dist"
 
 # SPA fallback: client-side routes resolve to index.html. Real files (hashed
-# assets and /genosdb/*) are served directly by Netlify before this rule applies,
-# so the P2P engine and bundles load normally.
+# assets) are served directly by Netlify before this rule applies.
 [[redirects]]
   from = "/*"
   to = "/index.html"

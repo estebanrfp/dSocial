@@ -1,15 +1,12 @@
 {
   "name": "dsocial",
-  "version": "0.4.0",
-  "private": true,
-  "type": "module",
+  "version": "0.4.2",
   "description": "dSocial — a peer-to-peer social network built on GenosDB. Vanilla JavaScript, one dependency, no UI framework.",
+  "private": true,
   "scripts": {
     "dev": "bun dev.js",
-    "build": "rm -rf dist && bun build ./index.html --outdir dist --minify --sourcemap=linked --public-path=/ && bun scripts/copy-genosdb.js dist",
+    "build": "rm -rf dist && bun build ./index.html --outdir dist --minify --sourcemap=linked --public-path=/",
     "serve": "bun server.js"
   },
-  "dependencies": {
-    "genosdb": "0.33.5"
-  }
+  "type": "module"
 }

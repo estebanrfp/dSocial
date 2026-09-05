@@ -1,6 +1,5 @@
-// Static server for the built app (dist/) with SPA fallback. GenosDB's plugin
-// .min.js sit at the dist root, next to the app bundle, where the engine's
-// import.meta.url resolves them. Used by `serve` and (after a watch build) `dev`.
+// Static server for the built app (dist/) with SPA fallback. Used by `serve` and
+// (after a watch build) `dev`.
 const OUT = `${import.meta.dir}/dist`;
 const PORT = Number(process.env.PORT ?? 3000);
 

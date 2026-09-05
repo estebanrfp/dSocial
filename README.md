@@ -121,7 +121,6 @@ dSocial is designed to be **harder to censor and tamper with than a single-serve
 dSocial is a pure client app — **no backend, no relay server to run.**
 
 ```sh
-bun install
 bun run dev      # http://localhost:3000
 ```
 
@@ -133,7 +132,7 @@ bun run build    # Production build → dist/ (minified)
 bun run serve    # Serve an existing build locally
 ```
 
-> **How GenosDB is bundled.** The app imports GenosDB the canonical way — `import { gdb } from "genosdb"` — so the bundler **inlines GenosDB's core straight into the app bundle**. GenosDB then loads its *optional* plugins (`sm`, `genosrtc`, `geo`, …) at runtime via `new URL('./*.min.js', import.meta.url)`, resolved next to the output bundle, and **only the plugins in use are fetched** (this build never pulls `ai`, `nlq` or `geo`). Bun doesn't emit those `.min.js`, so [`scripts/copy-genosdb.js`](scripts/copy-genosdb.js) copies them to the build root beside the bundle — the *"copy the assets after the build"* step from GenosDB's [bundler guide](https://github.com/estebanrfp/gdb/blob/main/docs/bundler-configuration.md).
+> **How GenosDB is loaded.** The app imports GenosDB from the jsDelivr CDN — `import { gdb } from "https://cdn.jsdelivr.net/npm/genosdb@latest/dist/index.min.js"` — and Bun keeps that URL import as-is, so **nothing is installed or copied into the build**. GenosDB then loads its *optional* plugins (`sm`, `genosrtc`, `geo`, …) at runtime beside itself on the CDN, and **only the plugins in use are fetched** (this build never pulls `ai`, `nlq` or `geo`). Every engine release reaches the app without a rebuild.
 >
 > `dev` and `build` share the **same bundle-to-disk pipeline** (Bun's HMR dev server resolves `import.meta.url` to a `file://` path the browser blocks, so dev mirrors production rather than diverging from it). The output is plain **static hosting, not a backend**: *serverless* here means no application server ever processes your data — it all runs peer-to-peer in the browser.
 

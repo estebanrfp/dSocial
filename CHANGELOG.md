@@ -1,8 +1,17 @@
 # Changelog
 
 All notable changes to **dSocial** are documented here. Format based on
-[Keep a Changelog](https://keepachangelog.com/). The app runs on **GenosDB 0.33.4**,
-its only runtime dependency — bundled into the app, with its runtime plugins copied beside the bundle.
+[Keep a Changelog](https://keepachangelog.com/). The app runs on the latest **GenosDB**
+release, its only runtime dependency, loaded from the jsDelivr CDN.
+
+## [0.4.2] — GenosDB from the CDN
+
+### Changed
+
+- **GenosDB is no longer installed or bundled.** The app imports `genosdb@latest` from
+  the jsDelivr CDN, where the engine resolves its plugins beside itself; the copy
+  script and the npm dependency are gone, and every engine release reaches the app
+  without a rebuild.
 
 ## [0.4.1] — GenosDB 0.33.4
 

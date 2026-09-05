@@ -1,10 +1,9 @@
 // Single GenosDB instance — the app's entire data, identity and P2P layer.
 //
-// Imported the canonical way (`from "genosdb"`): the bundler inlines GenosDB's
-// core into the app bundle. The engine still loads its optional plugins (sm,
-// genosrtc, …) at runtime via `new URL('./*.min.js', import.meta.url)`, so the
-// build emits those .min.js next to the output bundle (see scripts/copy-genosdb.js).
-import { gdb } from "genosdb";
+// Loaded at runtime from the jsDelivr CDN, always the latest release, where the
+// engine resolves its optional plugins (sm, genosrtc, …) beside itself. Bun keeps
+// the URL import as-is, so nothing is installed or copied into the build.
+import { gdb } from "https://cdn.jsdelivr.net/npm/genosdb@latest/dist/index.min.js";
 
 /** Database id — also the P2P room name. */
 export const GDB_NAME = "dsocial-v1";
